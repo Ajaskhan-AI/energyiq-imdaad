@@ -1,6 +1,8 @@
 import { ArrowRight, Briefcase, Building2, ChartColumn, HardHat, MapPin, Radio, ShieldCheck, Zap, type LucideIcon } from 'lucide-react'
 import { useNavigate } from 'react-router'
 import { ROLE_HOME, ROLE_LABELS, ROLE_ORDER } from '../auth/roles'
+import { Button } from '@/components/shadcn/button'
+import { Card, CardContent, CardDescription, CardTitle } from '@/components/shadcn/card'
 import { BrandMark } from '../components/layout/BrandMark'
 import { SampleBadge } from '../components/layout/SampleBadge'
 import { getClient, getSite, SITES } from '../data/sites'
@@ -25,15 +27,6 @@ function scopeLabel(user: User): string {
   if (user.clientId) return getClient(user.clientId)?.name ?? 'Client'
   if (user.siteIds === 'ALL') return 'All sites'
   return user.siteIds.map((id) => getSite(id)?.shortName ?? id).join(' & ')
-}
-
-function LoginLabel() {
-  return (
-    <span className="inline-flex shrink-0 items-center gap-1 text-sm font-semibold text-teal-700">
-      Log in
-      <ArrowRight className="size-4 transition group-hover:translate-x-0.5" aria-hidden />
-    </span>
-  )
 }
 
 /**
@@ -130,53 +123,49 @@ export default function LoginPage() {
               {roles.map((r) => {
                 const { icon: Icon, blurb } = ROLE_INFO[r]
                 const roleUsers = users.filter((u) => u.role === r)
-                const header = (
-                  <>
-                    <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-navy-900 text-teal-300">
-                      <Icon className="size-5" aria-hidden />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block font-semibold text-navy-900">{ROLE_LABELS[r]}</span>
-                      <span className="block text-sm text-navy-500">{blurb}</span>
-                    </span>
-                  </>
-                )
-                // One account: the whole card is the login button.
-                if (roleUsers.length === 1) {
-                  return (
-                    <li key={r}>
-                      <button
-                        type="button"
-                        onClick={() => signIn(roleUsers[0].id)}
-                        aria-label={`Log in as ${ROLE_LABELS[r]}`}
-                        className="group flex w-full items-center gap-3 rounded-2xl border border-navy-100 bg-white p-4 text-left shadow-sm transition hover:border-teal-400 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-500"
-                      >
-                        {header}
-                        <LoginLabel />
-                      </button>
-                    </li>
-                  )
-                }
-                // Several accounts (e.g. one per client): choose by scope, not by name.
+                const single = roleUsers.length === 1
+                // Long labels (lists of sites) get a full row each so they never get cut off.
+                const stacked = roleUsers.some((u) => scopeLabel(u).length > 24)
                 return (
-                  <li key={r} className="rounded-2xl border border-navy-100 bg-white p-4 shadow-sm">
-                    <div className="flex items-start gap-3">{header}</div>
-                    {/* Long labels (lists of sites) get a full row each so they never get cut off */}
-                    <div className={roleUsers.some((u) => scopeLabel(u).length > 24) ? 'mt-3 grid gap-2' : 'mt-3 grid gap-2 sm:grid-cols-2'}>
-                      {roleUsers.map((u) => (
-                        <button
-                          key={u.id}
-                          type="button"
-                          onClick={() => signIn(u.id)}
-                          aria-label={`Log in as ${ROLE_LABELS[r]}, ${scopeLabel(u)}`}
-                          className="group flex w-full items-center gap-2 rounded-xl border border-navy-100 bg-navy-50/50 px-3 py-2.5 text-left transition hover:border-teal-400 hover:bg-teal-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-500"
-                        >
-                          <MapPin className="size-4 shrink-0 text-navy-400" aria-hidden />
-                          <span className="min-w-0 flex-1 truncate text-sm font-medium text-navy-900">{scopeLabel(u)}</span>
-                          <LoginLabel />
-                        </button>
-                      ))}
-                    </div>
+                  <li key={r}>
+                    <Card className="gap-3 py-4 transition hover:border-navy-200 hover:shadow-md">
+                      <div className="flex items-center gap-3 px-4">
+                        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-navy-900 text-teal-300">
+                          <Icon className="size-5" aria-hidden />
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <CardTitle className="text-base">{ROLE_LABELS[r]}</CardTitle>
+                          <CardDescription>{blurb}</CardDescription>
+                        </div>
+                        {single && (
+                          <Button onClick={() => signIn(roleUsers[0].id)} aria-label={`Log in as ${ROLE_LABELS[r]}`}>
+                            Log in
+                            <ArrowRight aria-hidden />
+                          </Button>
+                        )}
+                      </div>
+                      {/* Several accounts (e.g. one per client): choose by scope, not by name */}
+                      {!single && (
+                        <CardContent className={stacked ? 'grid gap-2 px-4' : 'grid gap-2 px-4 sm:grid-cols-2'}>
+                          {roleUsers.map((u) => (
+                            <Button
+                              key={u.id}
+                              variant="outline"
+                              onClick={() => signIn(u.id)}
+                              aria-label={`Log in as ${ROLE_LABELS[r]}, ${scopeLabel(u)}`}
+                              className="group h-11 justify-start hover:border-teal-400 hover:bg-teal-50"
+                            >
+                              <MapPin className="text-muted-foreground" aria-hidden />
+                              <span className="min-w-0 flex-1 truncate text-left">{scopeLabel(u)}</span>
+                              <span className="inline-flex items-center gap-1 font-semibold text-teal-700">
+                                Log in
+                                <ArrowRight className="transition group-hover:translate-x-0.5" aria-hidden />
+                              </span>
+                            </Button>
+                          ))}
+                        </CardContent>
+                      )}
+                    </Card>
                   </li>
                 )
               })}

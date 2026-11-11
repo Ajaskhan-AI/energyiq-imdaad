@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "tw-animate-css"; /* enter/exit animations used by shadcn/ui (dialogs, menus…) */
 
 /*
   Design tokens. Tailwind v4 turns each --color-* variable into utility
@@ -29,7 +30,75 @@
   --color-alert-soft: #fee2e2;
 }
 
+/*
+  shadcn/ui tokens. shadcn components use names like bg-primary, text-muted-foreground,
+  border-input. Here they are mapped to the EnergyIQ brand (navy + teal), so shadcn
+  components look like the rest of the app. Light theme only.
+*/
+:root {
+  --radius: 0.75rem;
+  --background: #ffffff;
+  --foreground: #10213f; /* navy-900 */
+  --card: #ffffff;
+  --card-foreground: #10213f;
+  --popover: #ffffff;
+  --popover-foreground: #10213f;
+  --primary: #10213f; /* navy-900: main buttons */
+  --primary-foreground: #ffffff;
+  --secondary: #f2f5fb; /* navy-50 */
+  --secondary-foreground: #172d53;
+  --muted: #f2f5fb;
+  --muted-foreground: #3d5f9c; /* navy-500 */
+  --accent: #e3eaf5; /* navy-100: hover backgrounds */
+  --accent-foreground: #10213f;
+  --destructive: #dc2626;
+  --border: #e3eaf5; /* navy-100 */
+  --input: #c3d1e8; /* navy-200 */
+  --ring: #0d9488; /* teal-600: focus rings */
+  --chart-1: #2a4a82;
+  --chart-2: #0d9488;
+  --chart-3: #f59e0b;
+  --chart-4: #94acd4;
+  --chart-5: #dc2626;
+}
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+}
+
 @layer base {
+  /* Borders without a colour class use the light brand border (Tailwind v4 default is the text colour). */
+  *,
+  ::before,
+  ::after {
+    border-color: var(--color-border);
+  }
   html {
     @apply bg-navy-50 text-navy-900 antialiased;
   }
