@@ -11,6 +11,7 @@ import {
   DatabaseBackup,
   FileText,
   Gauge,
+  Leaf,
   Globe,
   LayoutDashboard,
   Mail,
@@ -109,6 +110,7 @@ const GROUPS: Array<{ name: string; tagline: string; modules: Module[] }> = [
     tagline: 'Turn readings into findings',
     modules: [
       { icon: ChartColumn, title: 'Energy analytics', to: '/energy', text: 'Use compared with opening hours and the UAE calendar, so waste is found automatically.' },
+      { icon: Leaf, title: 'Carbon emissions', to: '/carbon', text: 'Scope 2 CO₂e from metered kWh and the DEWA grid factor, with an ESG-ready PDF.' },
       { icon: Gauge, title: 'Capacity & demand', to: '/capacity', text: 'Peak demand against breaker ratings, and a check before new load is added.' },
       { icon: Waves, title: 'Power quality', to: '/power-quality', text: 'Power factor, balance, voltage and harmonics, with recommendations.' },
       { icon: Activity, title: 'Asset health', to: '/assets', text: 'CT clamps on motors reveal developing faults weeks ahead.' },

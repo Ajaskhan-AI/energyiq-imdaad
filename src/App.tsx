@@ -20,6 +20,7 @@ const PowerQualityPage = lazy(() => import('./pages/powerQuality/PowerQualityPag
 const CapacityPage = lazy(() => import('./pages/capacity/CapacityPage'))
 const ReliabilityPage = lazy(() => import('./pages/reliability/ReliabilityPage'))
 const BudgetPage = lazy(() => import('./pages/budget/BudgetPage'))
+const CarbonPage = lazy(() => import('./pages/carbon/CarbonPage'))
 const AssetsPage = lazy(() => import('./pages/assets/AssetsPage'))
 const AssetDetailPage = lazy(() => import('./pages/assets/AssetDetailPage'))
 const BillingPage = lazy(() => import('./pages/billing/BillingPage'))
@@ -63,6 +64,7 @@ export default function App() {
             <Route path="capacity" element={guard(PAGE_ACCESS.capacity, <CapacityPage />)} />
             <Route path="reliability" element={guard(PAGE_ACCESS.reliability, <ReliabilityPage />)} />
             <Route path="budget" element={guard(PAGE_ACCESS.budget, <BudgetPage />)} />
+            <Route path="carbon" element={guard(PAGE_ACCESS.carbon, <CarbonPage />)} />
             <Route path="assets" element={guard(PAGE_ACCESS.assets, <AssetsPage />)} />
             <Route path="assets/:assetId" element={guard(PAGE_ACCESS.assets, <AssetDetailPage />)} />
             <Route path="billing" element={guard(PAGE_ACCESS.billing, <BillingPage />)} />

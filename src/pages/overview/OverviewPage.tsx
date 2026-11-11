@@ -130,7 +130,7 @@ export default function OverviewPage() {
           tone="neutral"
           to={can(user, 'billing.view') ? '/billing' : '/energy'}
         />
-        <KpiCard label={`CO₂ — ${format(now, 'MMMM')}`} value={`${formatNumber(kwhToTonnesCo2(monthKwh), 0)} t`} sub="Scope 2, month to date (indicative)" icon={Leaf} tone="ok" to="/report" />
+        <KpiCard label={`CO₂ — ${format(now, 'MMMM')}`} value={`${formatNumber(kwhToTonnesCo2(monthKwh), 0)} t`} sub="Scope 2, month to date (indicative)" icon={Leaf} tone="ok" to="/carbon" />
         {can(user, 'devices.view') ? (
           <KpiCard label="IoT nodes online" value={`${nodesUp} / ${nodes.length}`} sub={nodes.length - nodesUp ? `${nodes.length - nodesUp} offline` : 'All reporting'} icon={Radio} tone={nodesUp < nodes.length ? 'warn' : 'ok'} to="/devices" />
         ) : (

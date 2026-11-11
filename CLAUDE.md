@@ -43,7 +43,8 @@ Imdaad (FM provider) → **clients** → **sites** → **buildings** → **SMDBs
 10. **Capacity & demand** — metered peak demand vs breaker rating per board, headroom, hours above the planning limit, load duration curve, "can this board take X kW?" checker (`src/lib/capacity.ts`).
 11. **Budget & forecast** — month-to-date cost per site vs an editable monthly budget, month-end forecast from the load model, likely cause linked to waste patterns (`src/lib/budget.ts`; budgets stored per site).
 12. **Supply reliability** — breaker trips and utility supply interruptions detected by the meters, availability per board and site, repeat-trip boards, event log; live demo trips appear too (`src/lib/reliability.ts`).
-13. **How it works** — hardware chain, measured values, modules, pilot outline, about Kuroshio (no add-ons section).
+13. **Carbon emissions (Scope 2)** — t CO₂e per site, month and load type from metered kWh × the DEWA grid emission factor (indicative, set once in `src/lib/co2.ts`), location-based method, carbon intensity per m², avoidable emissions from open waste patterns, carbon report PDF (`src/lib/carbon.ts`, `src/pdf/carbonReport.ts`).
+14. **How it works** — hardware chain, measured values, modules, pilot outline, about Kuroshio (no add-ons section).
 
 ## Role-based access (RBAC)
 No real authentication: a **demo login screen** with one card per user, and a **Switch role** menu in the top bar. Current user is persisted in localStorage; "Reset demo data" logs out.
