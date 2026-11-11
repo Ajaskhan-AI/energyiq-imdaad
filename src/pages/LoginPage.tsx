@@ -3,15 +3,13 @@ import { useNavigate } from 'react-router'
 import { ROLE_HOME, ROLE_LABELS, ROLE_ORDER } from '../auth/roles'
 import { BrandMark } from '../components/layout/BrandMark'
 import { SampleBadge } from '../components/layout/SampleBadge'
-import { UserAvatar } from '../components/ui/UserAvatar'
-import { SITES } from '../data/sites'
+import { getClient, getSite, SITES } from '../data/sites'
 import { NODES, SMDBS } from '../data/smdbs'
 import { formatNumber } from '../lib/format'
-import { siteFilterLabel } from '../lib/scope'
 import { useSimulator } from '../sim/simulatorContext'
 import { actions } from '../store/actions'
 import { useAppDispatch, useAppState } from '../store/hooks'
-import type { Role } from '../types'
+import type { Role, User } from '../types'
 
 /** What each role is for, shown on its login card. */
 const ROLE_INFO: Record<Role, { icon: LucideIcon; blurb: string }> = {
@@ -22,9 +20,25 @@ const ROLE_INFO: Record<Role, { icon: LucideIcon; blurb: string }> = {
   admin: { icon: ShieldCheck, blurb: 'IoT devices, users and demo tools' },
 }
 
+/** What a login covers, without showing a person's name: the client, or the sites. */
+function scopeLabel(user: User): string {
+  if (user.clientId) return getClient(user.clientId)?.name ?? 'Client'
+  if (user.siteIds === 'ALL') return 'All sites'
+  return user.siteIds.map((id) => getSite(id)?.shortName ?? id).join(' & ')
+}
+
+function LoginLabel() {
+  return (
+    <span className="inline-flex shrink-0 items-center gap-1 text-sm font-semibold text-teal-700">
+      Log in
+      <ArrowRight className="size-4 transition group-hover:translate-x-0.5" aria-hidden />
+    </span>
+  )
+}
+
 /**
- * Demo login: one card per role, with a login button for each demo user in
- * that role. There is no real authentication.
+ * Demo login: one card per role. Roles with several demo accounts show one
+ * button per client / set of sites. There is no real authentication.
  */
 export default function LoginPage() {
   const { users } = useAppState()
@@ -116,35 +130,50 @@ export default function LoginPage() {
               {roles.map((r) => {
                 const { icon: Icon, blurb } = ROLE_INFO[r]
                 const roleUsers = users.filter((u) => u.role === r)
+                const header = (
+                  <>
+                    <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-navy-900 text-teal-300">
+                      <Icon className="size-5" aria-hidden />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block font-semibold text-navy-900">{ROLE_LABELS[r]}</span>
+                      <span className="block text-sm text-navy-500">{blurb}</span>
+                    </span>
+                  </>
+                )
+                // One account: the whole card is the login button.
+                if (roleUsers.length === 1) {
+                  return (
+                    <li key={r}>
+                      <button
+                        type="button"
+                        onClick={() => signIn(roleUsers[0].id)}
+                        aria-label={`Log in as ${ROLE_LABELS[r]}`}
+                        className="group flex w-full items-center gap-3 rounded-2xl border border-navy-100 bg-white p-4 text-left shadow-sm transition hover:border-teal-400 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-500"
+                      >
+                        {header}
+                        <LoginLabel />
+                      </button>
+                    </li>
+                  )
+                }
+                // Several accounts (e.g. one per client): choose by scope, not by name.
                 return (
                   <li key={r} className="rounded-2xl border border-navy-100 bg-white p-4 shadow-sm">
-                    <div className="flex items-start gap-3">
-                      <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-navy-900 text-teal-300">
-                        <Icon className="size-5" aria-hidden />
-                      </span>
-                      <div className="min-w-0">
-                        <h3 className="font-semibold text-navy-900">{ROLE_LABELS[r]}</h3>
-                        <p className="text-sm text-navy-500">{blurb}</p>
-                      </div>
-                    </div>
-                    <div className={roleUsers.length > 1 ? 'mt-3 grid gap-2 sm:grid-cols-2' : 'mt-3'}>
+                    <div className="flex items-start gap-3">{header}</div>
+                    {/* Long labels (lists of sites) get a full row each so they never get cut off */}
+                    <div className={roleUsers.some((u) => scopeLabel(u).length > 24) ? 'mt-3 grid gap-2' : 'mt-3 grid gap-2 sm:grid-cols-2'}>
                       {roleUsers.map((u) => (
                         <button
                           key={u.id}
                           type="button"
                           onClick={() => signIn(u.id)}
-                          aria-label={`Log in as ${u.name}, ${ROLE_LABELS[r]}`}
-                          className="group flex w-full items-center gap-3 rounded-xl border border-navy-100 bg-navy-50/50 px-3 py-2.5 text-left transition hover:border-teal-400 hover:bg-teal-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-500"
+                          aria-label={`Log in as ${ROLE_LABELS[r]}, ${scopeLabel(u)}`}
+                          className="group flex w-full items-center gap-2 rounded-xl border border-navy-100 bg-navy-50/50 px-3 py-2.5 text-left transition hover:border-teal-400 hover:bg-teal-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-500"
                         >
-                          <UserAvatar user={u} size="sm" />
-                          <span className="min-w-0 flex-1">
-                            <span className="block truncate text-sm font-medium text-navy-900">{u.name}</span>
-                            <span className="block truncate text-xs text-navy-500">{siteFilterLabel(u, 'ALL')}</span>
-                          </span>
-                          <span className="inline-flex shrink-0 items-center gap-1 text-sm font-semibold text-teal-700">
-                            Log in
-                            <ArrowRight className="size-4 transition group-hover:translate-x-0.5" aria-hidden />
-                          </span>
+                          <MapPin className="size-4 shrink-0 text-navy-400" aria-hidden />
+                          <span className="min-w-0 flex-1 truncate text-sm font-medium text-navy-900">{scopeLabel(u)}</span>
+                          <LoginLabel />
                         </button>
                       ))}
                     </div>
