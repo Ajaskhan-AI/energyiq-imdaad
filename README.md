@@ -51,7 +51,7 @@ Use **Switch role** (top right) to jump between users, the **site switcher** to 
    open it to see the hourly evidence, then **Create work order** → **Send to CAFM**.
 3. **Energy analytics → Operating calendar** — add a public holiday or shutdown and watch the analysis recalculate.
 4. **Admin → SMDB monitoring** — *Simulate trip* → live alert + toast. **Engineer** acknowledges and creates a work order.
-5. **Device health** — the Logistics Hub office node is offline (data buffered); *Restart node* brings it back.
+5. **Device health** — all 14 nodes online; as Admin, *Simulate comms loss* takes one offline (data buffered) and *Restart node* brings it back.
 6. **Power quality** — car-park board at PF 0.84 with the capacitor bank size needed; medical-centre UPS board with high THD.
 7. **Billing** — metered recharge per tenant; download a recharge statement PDF.
 8. **Switch to Client (Hamad, mall)** — sees only the mall; downloads the monthly client report PDF.

@@ -5,11 +5,11 @@ import { createRng, hashString } from './rng'
 /**
  * Simulated health of the Kuroshio IoT nodes (ESP32-S3 + SIM7080G).
  * Signal strength is stable per node (seeded); one node sits in a basement
- * with weak coverage, and one starts the demo offline.
+ * with weak coverage (still online). All nodes start online.
  */
 
-/** Nodes that start the demo offline, with how long ago they dropped out (minutes). */
-export const SEED_OFFLINE: Record<string, number> = { 'KAI-N-0006': 135 }
+/** Nodes that start the demo offline, with how long ago they dropped out (minutes). None: every node starts online; use "Simulate comms loss" on Device health to show an outage. */
+export const SEED_OFFLINE: Record<string, number> = {}
 
 /** Basement / plant-room nodes with poor cellular coverage (dBm). */
 const RSSI_OVERRIDE: Record<string, number> = { 'KAI-N-0003': -105 }
