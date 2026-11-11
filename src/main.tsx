@@ -1,5 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+// Inter (variable weight) is bundled with the app, so it also works offline in the meeting room.
+import '@fontsource-variable/inter'
 import './index.css'
 import App from './App.tsx'
 import { TooltipProvider } from './components/shadcn/tooltip.tsx'

@@ -13,7 +13,7 @@
   - ok / warn / alert = status colours only (green / amber / red)
 */
 @theme {
-  --font-sans: "Inter", "Segoe UI", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter Variable", "Inter", "Segoe UI", ui-sans-serif, system-ui, sans-serif;
 
   --color-navy-50: #f3f6fd;
   --color-navy-100: #e3eaf8;
@@ -119,6 +119,19 @@
   }
   html {
     @apply bg-white text-navy-900 antialiased;
+    /* Inter's more legible shapes: open 4/6/9, distinct 1/l/I, single-storey a off */
+    font-feature-settings: "cv01", "cv02", "cv03", "cv04", "cv09", "cv11";
+    text-rendering: optimizeLegibility;
+  }
+  /* Numbers line up in columns everywhere (tables, KPIs, live values) */
+  table,
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+  h1,
+  h2,
+  h3 {
+    letter-spacing: -0.015em;
   }
   body {
     @apply min-h-screen;

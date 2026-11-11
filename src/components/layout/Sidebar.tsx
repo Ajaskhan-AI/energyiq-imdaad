@@ -61,10 +61,10 @@ export function Sidebar({ mobileOpen, onClose, collapsed, onToggleCollapsed }: P
         <div className={cn('flex h-16 items-center gap-3 border-b border-navy-100 px-4', mini && 'lg:justify-center lg:px-0')}>
           <KuroshioLogo className="h-8" />
           <div className={cn('min-w-0 flex-1', mini && 'lg:hidden')}>
-            <p className="truncate text-sm font-bold text-navy-950">
-              EnergyIQ <span className="font-medium text-navy-400">by Kuroshio AI</span>
+            <p className="truncate text-base leading-tight font-bold text-navy-950">EnergyIQ</p>
+            <p className="truncate text-xs text-navy-500">
+              Kuroshio AI · <span className="text-teal-600">for Imdaad</span>
             </p>
-            <p className="truncate text-xs text-teal-600">Prepared for Imdaad</p>
           </div>
           <button type="button" onClick={onClose} className="rounded-md p-1 text-navy-400 hover:bg-navy-50 lg:hidden" aria-label="Close menu">
             <X className="size-5" />
