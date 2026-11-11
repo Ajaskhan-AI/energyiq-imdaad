@@ -61,7 +61,7 @@ export default function ReportPage() {
     try {
       // Load the PDF library only when needed (keeps the app itself fast to open).
       const { downloadMonthlyReport } = await import('../../pdf/monthlyReport')
-      const fileName = downloadMonthlyReport(buildMonthlyReport(source, month, scope.siteIds, scopeLabel, new Date()), scope.fileKey)
+      const fileName = await downloadMonthlyReport(buildMonthlyReport(source, month, scope.siteIds, scopeLabel, new Date()), scope.fileKey, { recipient, recipientSub, reference: ref, issued })
       toast.show(`Downloaded ${fileName}`)
     } catch (error) {
       console.error(error)
