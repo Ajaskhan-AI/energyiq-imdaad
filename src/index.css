@@ -137,3 +137,34 @@
     @apply min-h-screen;
   }
 }
+
+/* How it works: "data" dots moving along the connectors (down on phones, right on large screens) */
+@keyframes hiw-flow-y {
+  from { top: 0; opacity: 0; }
+  15% { opacity: 1; }
+  85% { opacity: 1; }
+  to { top: calc(100% - 0.5rem); opacity: 0; }
+}
+@keyframes hiw-flow-x {
+  from { left: 0; opacity: 0; }
+  15% { opacity: 1; }
+  85% { opacity: 1; }
+  to { left: calc(100% - 0.5rem); opacity: 0; }
+}
+.hiw-dot {
+  animation: hiw-flow-y 2.4s linear infinite;
+}
+.hiw-dot-2 {
+  animation-delay: 1.2s;
+}
+@media (min-width: 64rem) {
+  .hiw-dot {
+    animation-name: hiw-flow-x;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hiw-dot {
+    animation: none;
+    display: none;
+  }
+}

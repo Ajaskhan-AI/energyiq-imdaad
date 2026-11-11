@@ -1,223 +1,405 @@
 import {
   Activity,
-  ArrowDown,
-  Banknote,
   ArrowRight,
-  Building,
+  Banknote,
+  Building2,
   Cable,
   ChartColumn,
   ClipboardList,
   Cloud,
   Cpu,
+  DatabaseBackup,
   Droplet,
   FileText,
   Flame,
-  Gauge,
   Fuel,
+  Gauge,
   Globe,
+  LayoutDashboard,
   Mail,
   Radio,
   RadioTower,
   Receipt,
   ShieldCheck,
   Snowflake,
+  Timer,
+  Users,
   Waves,
   Zap,
   type LucideIcon,
 } from 'lucide-react'
 import { Fragment } from 'react'
 import { Link } from 'react-router'
-import { Card } from '../../components/ui/Card'
-import { PageHeader } from '../../components/ui/PageHeader'
+import { cn } from '@/lib/utils'
+import { KuroshioLogo } from '../../components/layout/BrandMark'
+import { Badge } from '../../components/ui/Badge'
+import { NODES, SMDBS } from '../../data/smdbs'
+import { SITES } from '../../data/sites'
+import { formatNumber } from '../../lib/format'
+import { useSimulator } from '../../sim/simulatorContext'
 
-interface Step {
+// ---------------------------------------------------------------- content
+
+interface Stage {
   icon: LucideIcon
   title: string
-  detail: string
+  where: string
   points: string[]
 }
 
-const CHAIN: Step[] = [
+/** The data chain, left to right. `link` = what connects a stage to the next one. */
+const STAGES: Array<Stage & { link?: string }> = [
   {
     icon: Zap,
-    title: 'Selec energy meters',
-    detail: 'On each sub-main distribution board (SMDB)',
-    points: ['kWh, kW, kVA, power factor', 'Voltage and current per phase', 'RS-485 / Modbus output'],
+    title: 'Selec energy meter',
+    where: 'On every SMDB',
+    points: ['Voltage, current, kW, PF, kWh per board', 'Fits existing panels; existing Modbus meters can be read too'],
+    link: 'RS-485 · Modbus',
   },
   {
     icon: Cpu,
-    title: 'ESP32-S3 IoT node',
-    detail: 'Small gateway in the electrical room',
-    points: ['Reads up to 4 meters every minute', 'Also reads CT clamps on motors', 'Buffers data if the link drops, back-fills later'],
-  },
-  {
-    icon: RadioTower,
-    title: 'SIM7080G cellular',
-    detail: 'LTE-M / NB-IoT modem',
-    points: ['Sends data over the cellular network', 'Kept separate from the building / client IT network', 'No new cabling to a server room'],
+    title: 'Kuroshio IoT node',
+    where: 'ESP32-S3, in the electrical room',
+    points: ['Reads the meters every minute', 'Also reads CT clamps on motors', 'Stores readings if the signal drops'],
+    link: 'LTE-M / NB-IoT',
   },
   {
     icon: Cloud,
-    title: 'EnergyIQ cloud platform',
-    detail: 'What Imdaad and its clients use',
-    points: ['Live monitoring and alerts', 'Energy analytics and waste detection', 'Billing, work orders and monthly client reports'],
+    title: 'EnergyIQ cloud',
+    where: 'Analytics platform',
+    points: ['Checks every reading against limits', 'Learns each board’s normal pattern', 'Runs the analytics and reports'],
+    link: 'Web app',
+  },
+  {
+    icon: Users,
+    title: 'Imdaad & its clients',
+    where: 'Any browser, any device',
+    points: ['FM team: alerts, work orders', 'Engineers: analytics', 'Clients: their own sites only'],
   },
 ]
 
-const MODULES: Array<{ icon: LucideIcon; title: string; to: string; text: string }> = [
-  { icon: Zap, title: 'SMDB live monitoring', to: '/smdb', text: 'Live load, voltage, current and power factor per board across every client site, with alerts for overload, imbalance, voltage, low PF and trips.' },
-  { icon: ChartColumn, title: 'Energy analytics', to: '/energy', text: 'Every board compared with its site’s opening hours and the UAE calendar, so waste (e.g. HVAC on at weekends, lights on all night) is found automatically.' },
-  { icon: Waves, title: 'Power quality', to: '/power-quality', text: 'Power factor, phase balance, voltage and harmonics, with recommendations such as capacitor-bank sizing.' },
-  { icon: Activity, title: 'Asset health', to: '/assets', text: 'CT clamps on chillers, AHUs, pumps and cooling towers reveal developing faults from the motor current signature.' },
-  { icon: Gauge, title: 'Capacity & demand', to: '/capacity', text: 'Metered peak demand against each breaker rating, spare capacity, and a check before new load is connected.' },
-  { icon: ShieldCheck, title: 'Supply reliability', to: '/reliability', text: 'Every trip and supply interruption detected by the meters, with availability per board and per site.' },
-  { icon: Banknote, title: 'Budget & forecast', to: '/budget', text: 'Cost so far this month per site, a month-end forecast and an early warning before a site overspends.' },
-  { icon: Receipt, title: 'Billing & sub-metering', to: '/billing', text: 'Estimated DEWA charges per site and metered recharge to each tenant or cost centre.' },
-  { icon: ClipboardList, title: 'Work orders', to: '/work-orders', text: 'Any alert or insight becomes a work order, ready to hand over to Imdaad’s CAFM system.' },
-  { icon: Radio, title: 'Device health', to: '/devices', text: 'Signal, data completeness and firmware for every Kuroshio IoT node, so no data gap goes unnoticed.' },
-  { icon: FileText, title: 'Monthly client report', to: '/report', text: 'One-click PDF per client or site: energy, cost, waste found, power quality, alerts and indicative Scope 2 CO₂.' },
+const MEASURED: Array<{ label: string; unit: string }> = [
+  { label: 'Voltage per phase', unit: 'V' },
+  { label: 'Current per phase', unit: 'A' },
+  { label: 'Active power', unit: 'kW' },
+  { label: 'Apparent power', unit: 'kVA' },
+  { label: 'Reactive power', unit: 'kVAr' },
+  { label: 'Power factor', unit: 'PF' },
+  { label: 'Frequency', unit: 'Hz' },
+  { label: 'Energy', unit: 'kWh' },
+  { label: 'Current harmonics', unit: 'THD %' },
+]
+
+interface Module {
+  icon: LucideIcon
+  title: string
+  to: string
+  text: string
+}
+
+/** Same groups as the sidebar. */
+const GROUPS: Array<{ name: string; tagline: string; modules: Module[] }> = [
+  {
+    name: 'Monitor',
+    tagline: 'See every board, live',
+    modules: [
+      { icon: LayoutDashboard, title: 'Portfolio overview', to: '/overview', text: 'Every client site on one screen: live load, alerts, waste found, cost and CO₂.' },
+      { icon: Zap, title: 'SMDB live monitoring', to: '/smdb', text: 'Live readings per board with alerts for overload, imbalance, voltage, low PF and trips.' },
+      { icon: ShieldCheck, title: 'Supply reliability', to: '/reliability', text: 'Every trip and supply interruption, with availability per board and per site.' },
+      { icon: Radio, title: 'Device health', to: '/devices', text: 'Signal, data completeness and firmware of every IoT node.' },
+    ],
+  },
+  {
+    name: 'Analyse',
+    tagline: 'Turn readings into findings',
+    modules: [
+      { icon: ChartColumn, title: 'Energy analytics', to: '/energy', text: 'Use compared with opening hours and the UAE calendar, so waste is found automatically.' },
+      { icon: Gauge, title: 'Capacity & demand', to: '/capacity', text: 'Peak demand against breaker ratings, and a check before new load is added.' },
+      { icon: Waves, title: 'Power quality', to: '/power-quality', text: 'Power factor, balance, voltage and harmonics, with recommendations.' },
+      { icon: Activity, title: 'Asset health', to: '/assets', text: 'CT clamps on motors reveal developing faults weeks ahead.' },
+    ],
+  },
+  {
+    name: 'Operate',
+    tagline: 'Act, bill and report',
+    modules: [
+      { icon: ClipboardList, title: 'Work orders', to: '/work-orders', text: 'Any alert or finding becomes a work order, ready for Imdaad’s CAFM.' },
+      { icon: Banknote, title: 'Budget & forecast', to: '/budget', text: 'Cost so far, month-end forecast and early overspend warnings.' },
+      { icon: Receipt, title: 'Billing & sub-metering', to: '/billing', text: 'Estimated DEWA charges and metered recharge per tenant.' },
+      { icon: FileText, title: 'Monthly client report', to: '/report', text: 'A ready-to-send PDF for each client or site.' },
+    ],
+  },
 ]
 
 const ADD_ONS: Array<{ icon: LucideIcon; title: string; text: string }> = [
-  { icon: Snowflake, title: 'Cold-room & chiller temperature', text: 'Temperature sensors for cold stores, server rooms and chilled-water lines, with alerts before stock or equipment is at risk.' },
-  { icon: Droplet, title: 'Water & leak monitoring', text: 'Water meters and leak sensors in plant rooms, risers and car parks.' },
-  { icon: Fuel, title: 'Generator monitoring', text: 'Run hours, fuel level, battery voltage and test-run records for standby generators.' },
-  { icon: Flame, title: 'Panel hot-spot sensors', text: 'Wireless temperature sensors on busbars and terminals to catch loose connections early.' },
+  { icon: Snowflake, title: 'Cold-room & chiller temperature', text: 'Alerts before stock or equipment is at risk.' },
+  { icon: Droplet, title: 'Water & leak monitoring', text: 'Water meters and leak sensors in plant rooms and risers.' },
+  { icon: Fuel, title: 'Generator monitoring', text: 'Run hours, fuel level, battery and test-run records.' },
+  { icon: Flame, title: 'Panel hot-spot sensors', text: 'Busbar and terminal temperature to catch loose connections.' },
 ]
 
-const PILOT = [
-  ['Choose', 'Imdaad selects one or two client sites (e.g. an office tower and a mall) and their main SMDBs.'],
-  ['Install', 'Fit Selec meters (or read existing Modbus meters) and CT clamps on key motors; mount the IoT nodes. No shutdown for CT clamps.'],
-  ['Run', 'Use EnergyIQ alongside the current way of working: alerts, waste detection, monthly client reports.'],
-  ['Measure', 'Compare energy use, alerts caught early and work orders raised. Results are measured during the pilot.'],
-] as const
+const PILOT: Array<{ title: string; text: string }> = [
+  { title: 'Choose', text: 'Imdaad picks one or two client sites (e.g. an office tower and a mall) and their main SMDBs.' },
+  { title: 'Install', text: 'Fit Selec meters (or read existing Modbus meters) and CT clamps on key motors; mount the IoT nodes. No shutdown for CT clamps.' },
+  { title: 'Run', text: 'Use EnergyIQ alongside today’s way of working: alerts, waste detection, monthly client reports.' },
+  { title: 'Measure', text: 'Compare energy use, issues caught early and work orders raised. Results are measured during the pilot.' },
+]
 
-/** Sales/explanation page: the hardware chain, what each module does, add-ons and a pilot outline. */
+// ---------------------------------------------------------------- page
+
+/** Explains the platform: hardware chain, what is measured, modules, pilot and add-ons. */
 export default function HowItWorksPage() {
+  const sim = useSimulator()
+  const nodesOnline = sim.nodes.filter((n) => n.status !== 'offline').length
+
   return (
-    <>
-      <PageHeader
-        title="How it works"
-        description="From the electrical panel to the dashboard: the Kuroshio EnergyIQ platform behind this demo, packaged for an FM provider managing many client sites."
-      />
-
-      <Card title="Data flow" subtitle="One IoT node per electrical room collects meter and motor data and sends it to the cloud">
-        <div className="flex flex-col items-stretch gap-3 lg:flex-row lg:items-stretch">
-          {CHAIN.map((step, i) => {
-            const Icon = step.icon
-            return (
-              <Fragment key={step.title}>
-                <div className="flex-1 rounded-xl border border-navy-100 bg-navy-50/50 p-4">
-                  <div className="flex items-center gap-3">
-                    <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-teal-600 ring-1 ring-teal-100">
-                      <Icon className="size-6" aria-hidden />
-                    </span>
-                    <div>
-                      <p className="font-semibold text-navy-900">{step.title}</p>
-                      <p className="text-xs text-navy-500">{step.detail}</p>
-                    </div>
-                  </div>
-                  <ul className="mt-3 space-y-1 text-sm text-navy-700">
-                    {step.points.map((p) => (
-                      <li key={p} className="flex gap-2">
-                        <span className="mt-2 size-1.5 shrink-0 rounded-full bg-teal-500" />
-                        {p}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                {i < CHAIN.length - 1 && (
-                  <div className="flex items-center justify-center text-teal-600" aria-hidden>
-                    <ArrowRight className="hidden size-6 lg:block" />
-                    <ArrowDown className="size-6 lg:hidden" />
-                  </div>
-                )}
-              </Fragment>
-            )
-          })}
-        </div>
-        <div className="mt-4 flex items-start gap-3 rounded-xl border border-teal-200 bg-teal-50 p-4">
-          <Cable className="mt-0.5 size-5 shrink-0 text-teal-700" aria-hidden />
-          <p className="text-sm text-navy-800">
-            <strong>CT clamps for predictive maintenance:</strong> split-core current transformers clip around the motor supply cables of chillers,
-            AHUs and pumps: no rewiring and no shutdown needed. The same IoT node reads them and EnergyIQ analyses the current signature.
-          </p>
-        </div>
-      </Card>
-
-      <h2 className="mt-8 mb-3 text-lg font-semibold text-navy-900">What Imdaad gets</h2>
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {MODULES.map(({ icon: Icon, title, to, text }) => (
-          <Link key={title} to={to} className="group rounded-xl border border-navy-100 bg-white p-5 shadow-sm transition hover:border-teal-300 hover:shadow-md">
-            <Icon className="size-6 text-teal-600" aria-hidden />
-            <p className="mt-2 font-semibold text-navy-900 group-hover:text-teal-700">{title}</p>
-            <p className="mt-1 text-sm text-navy-600">{text}</p>
-          </Link>
-        ))}
-      </div>
-
-      <h2 className="mt-8 mb-3 text-lg font-semibold text-navy-900">Available add-ons</h2>
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {ADD_ONS.map(({ icon: Icon, title, text }) => (
-          <div key={title} className="rounded-xl border border-dashed border-navy-200 bg-white p-5">
-            <div className="flex items-center justify-between">
-              <Icon className="size-6 text-navy-600" aria-hidden />
-              <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-semibold text-amber-800 ring-1 ring-amber-600/20">Add-on</span>
-            </div>
-            <p className="mt-2 font-semibold text-navy-900">{title}</p>
-            <p className="mt-1 text-sm text-navy-600">{text}</p>
-          </div>
-        ))}
-      </div>
-
-      <div className="mt-8 grid gap-6 xl:grid-cols-3">
-        <Card title="Suggested pilot" className="xl:col-span-2">
-          <ol className="grid gap-4 sm:grid-cols-2">
-            {PILOT.map(([title, text], i) => (
-              <li key={title} className="flex gap-3">
-                <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-teal-600 text-sm font-bold text-white">{i + 1}</span>
-                <span>
-                  <span className="block font-semibold text-navy-900">{title}</span>
-                  <span className="text-sm text-navy-600">{text}</span>
+    <div className="space-y-12">
+      {/* ---------- Hero ---------- */}
+      <section className="relative overflow-hidden rounded-2xl border border-teal-100 bg-teal-50/50 px-6 py-8 sm:px-10 sm:py-10">
+        <svg className="pointer-events-none absolute inset-0 size-full text-teal-600 opacity-[0.06]" aria-hidden>
+          <defs>
+            <pattern id="hiw-grid" width="32" height="32" patternUnits="userSpaceOnUse">
+              <path d="M32 0H0V32" fill="none" stroke="currentColor" strokeWidth="1" />
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#hiw-grid)" />
+        </svg>
+        <div className="relative flex flex-wrap items-center gap-8">
+          <div className="min-w-0 flex-1 basis-96">
+            <p className="text-sm font-semibold tracking-widest text-teal-700 uppercase">How it works</p>
+            <h1 className="mt-2 text-3xl leading-tight font-bold tracking-tight text-navy-950 sm:text-4xl">From the switchboard to a decision, in minutes.</h1>
+            <p className="mt-3 max-w-2xl text-lg text-navy-600">
+              A Selec meter on each SMDB, a Kuroshio IoT node in the electrical room, and the EnergyIQ cloud. No changes to the building’s IT network, and no
+              new cabling to a server room.
+            </p>
+            <div className="mt-5 flex flex-wrap gap-2">
+              {[
+                { icon: Timer, text: 'Readings every minute' },
+                { icon: RadioTower, text: 'Own cellular link, separate from the building network' },
+                { icon: DatabaseBackup, text: 'No data lost if the signal drops' },
+              ].map(({ icon: Icon, text }) => (
+                <span key={text} className="inline-flex items-center gap-1.5 rounded-full border border-teal-200 bg-white px-3 py-1.5 text-sm font-medium text-navy-800">
+                  <Icon className="size-4 text-teal-600" aria-hidden />
+                  {text}
                 </span>
-              </li>
-            ))}
-          </ol>
-          <p className="mt-4 text-sm text-navy-500">
-            All figures in this demo are sample data. Energy savings and other benefits are not promised: they are to be measured during the pilot.
-          </p>
-        </Card>
-
-        <Card title="About Kuroshio AI">
-          <div className="space-y-3 text-sm text-navy-700">
-            <p>Deep tech startup building IoT and AI tools for facilities, energy and industry.</p>
-            <p className="flex items-start gap-2">
-              <Building className="mt-0.5 size-4 shrink-0 text-navy-500" aria-hidden />
-              <span>
-                <strong>UAE:</strong> Kuroshio AI Ltd, RAKEZ, Ras Al Khaimah
-                <br />
-                <strong>India:</strong> Kuroshio AI Private Limited, STPI Trivandrum
-              </span>
-            </p>
-            <p className="flex items-center gap-2">
-              <Globe className="size-4 shrink-0 text-navy-500" aria-hidden />
-              <a href="https://www.kuroshioai.com" target="_blank" rel="noreferrer" className="text-teal-700 hover:underline">
-                www.kuroshioai.com
-              </a>
-              ·
-              <a href="https://www.kuroshioai.ae" target="_blank" rel="noreferrer" className="text-teal-700 hover:underline">
-                www.kuroshioai.ae
-              </a>
-            </p>
-            <p className="flex items-center gap-2">
-              <Mail className="size-4 shrink-0 text-navy-500" aria-hidden />
-              <a href="mailto:info@kuroshioai.com" className="text-teal-700 hover:underline">
-                info@kuroshioai.com
-              </a>
-            </p>
+              ))}
+            </div>
           </div>
-        </Card>
+          <dl className="grid w-full grid-cols-2 gap-3 sm:w-auto sm:grid-cols-2">
+            {[
+              ['Client sites', SITES.length],
+              ['SMDBs metered', SMDBS.length],
+              ['IoT nodes online', `${nodesOnline} / ${NODES.length}`],
+              ['Readings per day', formatNumber(SMDBS.length * 1440)],
+            ].map(([label, value]) => (
+              <div key={label} className="rounded-xl border border-teal-100 bg-white px-5 py-4 shadow-sm">
+                <dt className="text-xs font-medium text-navy-500">{label}</dt>
+                <dd className="mt-1 text-2xl font-bold text-navy-950 tabular-nums">{value}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      </section>
+
+      {/* ---------- Architecture ---------- */}
+      <section>
+        <SectionTitle eyebrow="The data chain" title="Four steps from the panel to the dashboard" />
+        <div className="flex flex-col items-stretch lg:flex-row">
+          {STAGES.map((stage, i) => (
+            <Fragment key={stage.title}>
+              <StageCard stage={stage} step={i + 1} />
+              {stage.link && <Connector label={stage.link} />}
+            </Fragment>
+          ))}
+        </div>
+        <div className="mt-4 flex items-start gap-3 rounded-xl border border-navy-100 bg-white p-4 text-sm text-navy-700 shadow-sm">
+          <Cable className="mt-0.5 size-5 shrink-0 text-teal-600" aria-hidden />
+          <p>
+            <strong className="text-navy-950">CT clamps for asset health:</strong> split-core current sensors clip around the motor cables of chillers, AHUs and pumps. No
+            rewiring and no shutdown. The same IoT node reads them, and EnergyIQ analyses the motor current signature.
+          </p>
+        </div>
+      </section>
+
+      {/* ---------- What is measured ---------- */}
+      <section className="grid gap-6 lg:grid-cols-5">
+        <div className="lg:col-span-2">
+          <SectionTitle eyebrow="What the meter sees" title="Nine values on every board, every minute" />
+          <p className="-mt-2 text-navy-600">
+            Every module in EnergyIQ is built from these readings. Nothing is typed in by hand: alerts, waste, capacity, reliability, billing and reports all come from
+            the meters.
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:col-span-3">
+          {MEASURED.map((m) => (
+            <div key={m.label} className="rounded-xl border border-navy-100 bg-white px-4 py-3 shadow-sm">
+              <p className="font-mono text-lg font-bold text-teal-700">{m.unit}</p>
+              <p className="text-sm text-navy-700">{m.label}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ---------- Modules ---------- */}
+      <section>
+        <SectionTitle eyebrow="What Imdaad gets" title="Monitor, analyse, operate" />
+        <div className="grid gap-6 lg:grid-cols-3">
+          {GROUPS.map((group, gi) => (
+            <div key={group.name} className="rounded-2xl border border-navy-100 bg-white p-5 shadow-sm">
+              <div className="mb-4 flex items-center gap-3">
+                <span className="flex size-8 items-center justify-center rounded-full bg-teal-600 text-sm font-bold text-white">{gi + 1}</span>
+                <div>
+                  <h3 className="font-bold text-navy-950">{group.name}</h3>
+                  <p className="text-sm text-navy-500">{group.tagline}</p>
+                </div>
+              </div>
+              <ul className="space-y-1">
+                {group.modules.map(({ icon: Icon, title, to, text }) => (
+                  <li key={to}>
+                    <Link to={to} className="group -mx-2 flex gap-3 rounded-lg px-2 py-2.5 transition hover:bg-teal-50">
+                      <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-teal-50 text-teal-600 ring-1 ring-teal-100 group-hover:bg-white">
+                        <Icon className="size-[18px]" aria-hidden />
+                      </span>
+                      <span className="min-w-0">
+                        <span className="flex items-center gap-1 font-semibold text-navy-950 group-hover:text-teal-700">
+                          {title}
+                          <ArrowRight className="size-3.5 opacity-0 transition group-hover:translate-x-0.5 group-hover:opacity-100" aria-hidden />
+                        </span>
+                        <span className="block text-sm text-navy-600">{text}</span>
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ---------- Pilot ---------- */}
+      <section>
+        <SectionTitle eyebrow="Getting started" title="A pilot on one or two sites" />
+        <ol className="grid gap-4 md:grid-cols-4">
+          {PILOT.map((step, i) => (
+            <li key={step.title} className="relative rounded-2xl border border-navy-100 bg-white p-5 shadow-sm">
+              <div className="flex items-center gap-3">
+                <span className="flex size-9 items-center justify-center rounded-full bg-teal-600 font-bold text-white">{i + 1}</span>
+                <h3 className="text-lg font-bold text-navy-950">{step.title}</h3>
+              </div>
+              <p className="mt-3 text-sm leading-relaxed text-navy-600">{step.text}</p>
+              {i < PILOT.length - 1 && <ArrowRight className="absolute top-7 -right-3.5 z-10 hidden size-5 rounded-full bg-white text-teal-600 md:block" aria-hidden />}
+            </li>
+          ))}
+        </ol>
+        <p className="mt-3 text-sm text-navy-500">All figures in this demo are sample data. Savings and other benefits are not promised: they are measured during the pilot.</p>
+      </section>
+
+      {/* ---------- Add-ons + About ---------- */}
+      <section className="grid gap-6 lg:grid-cols-5">
+        <div className="lg:col-span-3">
+          <SectionTitle eyebrow="Same IoT node, more sensors" title="Available add-ons" />
+          <div className="grid gap-3 sm:grid-cols-2">
+            {ADD_ONS.map(({ icon: Icon, title, text }) => (
+              <div key={title} className="flex gap-3 rounded-xl border border-dashed border-navy-200 bg-white p-4">
+                <Icon className="mt-0.5 size-5 shrink-0 text-navy-500" aria-hidden />
+                <div>
+                  <p className="flex flex-wrap items-center gap-2 font-semibold text-navy-950">
+                    {title}
+                    <Badge tone="info">Add-on</Badge>
+                  </p>
+                  <p className="mt-0.5 text-sm text-navy-600">{text}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="lg:col-span-2">
+          <SectionTitle eyebrow="Who we are" title="About Kuroshio AI" />
+          <div className="rounded-2xl border border-navy-100 bg-white p-5 shadow-sm">
+            <div className="flex items-center gap-3">
+              <KuroshioLogo className="h-10" />
+              <p className="text-sm text-navy-700">Deep tech startup building IoT and AI tools for facilities, energy and industry.</p>
+            </div>
+            <dl className="mt-4 space-y-3 text-sm">
+              <div className="flex gap-3">
+                <Building2 className="mt-0.5 size-4 shrink-0 text-teal-600" aria-hidden />
+                <span className="text-navy-700">
+                  <strong className="text-navy-950">UAE:</strong> Kuroshio AI Ltd, RAKEZ, Ras Al Khaimah
+                  <br />
+                  <strong className="text-navy-950">India:</strong> Kuroshio AI Private Limited, STPI Trivandrum
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                <Globe className="size-4 shrink-0 text-teal-600" aria-hidden />
+                <span>
+                  <a href="https://www.kuroshioai.com" target="_blank" rel="noreferrer" className="font-medium text-teal-700 hover:underline">
+                    www.kuroshioai.com
+                  </a>
+                  <span className="text-navy-300"> · </span>
+                  <a href="https://www.kuroshioai.ae" target="_blank" rel="noreferrer" className="font-medium text-teal-700 hover:underline">
+                    www.kuroshioai.ae
+                  </a>
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                <Mail className="size-4 shrink-0 text-teal-600" aria-hidden />
+                <a href="mailto:info@kuroshioai.com" className="font-medium text-teal-700 hover:underline">
+                  info@kuroshioai.com
+                </a>
+              </div>
+            </dl>
+          </div>
+        </div>
+      </section>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------- pieces
+
+function SectionTitle({ eyebrow, title }: { eyebrow: string; title: string }) {
+  return (
+    <div className="mb-5">
+      <p className="text-xs font-semibold tracking-widest text-teal-700 uppercase">{eyebrow}</p>
+      <h2 className="mt-1 text-2xl font-bold tracking-tight text-navy-950">{title}</h2>
+    </div>
+  )
+}
+
+function StageCard({ stage, step }: { stage: Stage; step: number }) {
+  const Icon = stage.icon
+  return (
+    <div className="flex-1 rounded-2xl border border-navy-100 bg-white p-5 shadow-sm">
+      <div className="flex items-center justify-between">
+        <span className="flex size-12 items-center justify-center rounded-xl bg-teal-600 text-white shadow-sm">
+          <Icon className="size-6" aria-hidden />
+        </span>
+        <span className="text-3xl font-bold text-navy-100 tabular-nums">{String(step).padStart(2, '0')}</span>
       </div>
-    </>
+      <h3 className="mt-4 text-lg font-bold text-navy-950">{stage.title}</h3>
+      <p className="text-sm font-medium text-teal-700">{stage.where}</p>
+      <ul className="mt-3 space-y-1.5 text-sm text-navy-600">
+        {stage.points.map((p) => (
+          <li key={p} className="flex gap-2">
+            <span className="mt-2 size-1.5 shrink-0 rounded-full bg-teal-500" />
+            {p}
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
+/** Link between two stages: a line with moving "data" dots and the protocol name. */
+function Connector({ label }: { label: string }) {
+  return (
+    <div className="relative flex shrink-0 items-center justify-center py-3 lg:w-24 lg:py-0" aria-hidden>
+      {/* the line: vertical on phones, horizontal on large screens */}
+      <span className="absolute h-full w-0.5 bg-teal-200 lg:h-0.5 lg:w-full" />
+      <span className={cn('hiw-dot absolute size-2 rounded-full bg-teal-600')} />
+      <span className={cn('hiw-dot hiw-dot-2 absolute size-2 rounded-full bg-teal-600')} />
+      <span className="relative rounded-full border border-teal-200 bg-white px-2 py-0.5 text-[11px] font-semibold whitespace-nowrap text-teal-700">{label}</span>
+    </div>
   )
 }
