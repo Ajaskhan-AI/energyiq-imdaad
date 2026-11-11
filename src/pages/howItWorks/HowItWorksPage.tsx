@@ -9,10 +9,7 @@ import {
   Cloud,
   Cpu,
   DatabaseBackup,
-  Droplet,
   FileText,
-  Flame,
-  Fuel,
   Gauge,
   Globe,
   LayoutDashboard,
@@ -21,7 +18,6 @@ import {
   RadioTower,
   Receipt,
   ShieldCheck,
-  Snowflake,
   Timer,
   Users,
   Waves,
@@ -32,7 +28,6 @@ import { Fragment } from 'react'
 import { Link } from 'react-router'
 import { cn } from '@/lib/utils'
 import { KuroshioLogo } from '../../components/layout/BrandMark'
-import { Badge } from '../../components/ui/Badge'
 import { NODES, SMDBS } from '../../data/smdbs'
 import { SITES } from '../../data/sites'
 import { formatNumber } from '../../lib/format'
@@ -131,13 +126,6 @@ const GROUPS: Array<{ name: string; tagline: string; modules: Module[] }> = [
   },
 ]
 
-const ADD_ONS: Array<{ icon: LucideIcon; title: string; text: string }> = [
-  { icon: Snowflake, title: 'Cold-room & chiller temperature', text: 'Alerts before stock or equipment is at risk.' },
-  { icon: Droplet, title: 'Water & leak monitoring', text: 'Water meters and leak sensors in plant rooms and risers.' },
-  { icon: Fuel, title: 'Generator monitoring', text: 'Run hours, fuel level, battery and test-run records.' },
-  { icon: Flame, title: 'Panel hot-spot sensors', text: 'Busbar and terminal temperature to catch loose connections.' },
-]
-
 const PILOT: Array<{ title: string; text: string }> = [
   { title: 'Choose', text: 'Imdaad picks one or two client sites (e.g. an office tower and a mall) and their main SMDBs.' },
   { title: 'Install', text: 'Fit Selec meters (or read existing Modbus meters) and CT clamps on key motors; mount the IoT nodes. No shutdown for CT clamps.' },
@@ -147,7 +135,7 @@ const PILOT: Array<{ title: string; text: string }> = [
 
 // ---------------------------------------------------------------- page
 
-/** Explains the platform: hardware chain, what is measured, modules, pilot and add-ons. */
+/** Explains the platform: hardware chain, what is measured, modules, pilot and who we are. */
 export default function HowItWorksPage() {
   const sim = useSimulator()
   const nodesOnline = sim.nodes.filter((n) => n.status !== 'offline').length
@@ -294,27 +282,9 @@ export default function HowItWorksPage() {
         <p className="mt-3 text-sm text-navy-500">All figures in this demo are sample data. Savings and other benefits are not promised: they are measured during the pilot.</p>
       </section>
 
-      {/* ---------- Add-ons + About ---------- */}
-      <section className="grid gap-6 lg:grid-cols-5">
-        <div className="lg:col-span-3">
-          <SectionTitle eyebrow="Same IoT node, more sensors" title="Available add-ons" />
-          <div className="grid gap-3 sm:grid-cols-2">
-            {ADD_ONS.map(({ icon: Icon, title, text }) => (
-              <div key={title} className="flex gap-3 rounded-xl border border-dashed border-navy-200 bg-white p-4">
-                <Icon className="mt-0.5 size-5 shrink-0 text-navy-500" aria-hidden />
-                <div>
-                  <p className="flex flex-wrap items-center gap-2 font-semibold text-navy-950">
-                    {title}
-                    <Badge tone="info">Add-on</Badge>
-                  </p>
-                  <p className="mt-0.5 text-sm text-navy-600">{text}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="lg:col-span-2">
+      {/* ---------- About ---------- */}
+      <section className="max-w-3xl">
+        <div>
           <SectionTitle eyebrow="Who we are" title="About Kuroshio AI" />
           <div className="rounded-2xl border border-navy-100 bg-white p-5 shadow-sm">
             <div className="flex items-center gap-3">
