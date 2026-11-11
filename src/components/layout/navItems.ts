@@ -1,14 +1,14 @@
 import {
   Activity,
   ChartColumn,
-  ClipboardCheck,
   ClipboardList,
   Cpu,
   FileText,
   LayoutDashboard,
-  MessageSquareWarning,
-  ScanQrCode,
+  Radio,
+  Receipt,
   Settings,
+  Waves,
   Zap,
   type LucideIcon,
 } from 'lucide-react'
@@ -23,23 +23,16 @@ export interface NavItem {
   access: readonly Permission[]
 }
 
-/** Desktop sidebar, in the order from CLAUDE.md (+ Settings for Manager/Admin). */
 export const NAV_ITEMS: NavItem[] = [
-  { path: '/overview', label: 'Overview', icon: LayoutDashboard, access: PAGE_ACCESS.overview },
-  { path: '/smdb', label: 'SMDB Monitoring', icon: Zap, access: PAGE_ACCESS.smdb },
-  { path: '/predictive', label: 'Predictive Maintenance', icon: Activity, access: PAGE_ACCESS.predictive },
-  { path: '/ppm', label: 'Logbook & PPM', icon: ClipboardCheck, access: PAGE_ACCESS.ppm },
-  { path: '/complaints', label: 'Complaints', icon: MessageSquareWarning, access: PAGE_ACCESS.complaints },
-  { path: '/energy', label: 'Energy Analytics', icon: ChartColumn, access: PAGE_ACCESS.energy },
-  { path: '/report', label: 'Monthly Report', icon: FileText, access: PAGE_ACCESS.report },
+  { path: '/overview', label: 'Portfolio overview', icon: LayoutDashboard, access: PAGE_ACCESS.overview },
+  { path: '/smdb', label: 'SMDB live monitoring', icon: Zap, access: PAGE_ACCESS.smdb },
+  { path: '/energy', label: 'Energy analytics', icon: ChartColumn, access: PAGE_ACCESS.energy },
+  { path: '/power-quality', label: 'Power quality', icon: Waves, access: PAGE_ACCESS.powerQuality },
+  { path: '/assets', label: 'Asset health', icon: Activity, access: PAGE_ACCESS.assets },
+  { path: '/billing', label: 'Billing & sub-metering', icon: Receipt, access: PAGE_ACCESS.billing },
+  { path: '/work-orders', label: 'Work orders', icon: ClipboardList, access: PAGE_ACCESS.workOrders },
+  { path: '/devices', label: 'Device health', icon: Radio, access: PAGE_ACCESS.devices },
+  { path: '/report', label: 'Monthly report', icon: FileText, access: PAGE_ACCESS.report },
   { path: '/how-it-works', label: 'How it works', icon: Cpu, access: PAGE_ACCESS.howItWorks },
   { path: '/settings', label: 'Settings', icon: Settings, access: PAGE_ACCESS.settings },
-]
-
-/** Bottom tab bar in the technician's mobile layout. */
-export const MOBILE_NAV_ITEMS: NavItem[] = [
-  { path: '/my-jobs', label: 'My Jobs', icon: ClipboardList, access: PAGE_ACCESS.myJobs },
-  { path: '/ppm/scan', label: 'Scan QR', icon: ScanQrCode, access: PAGE_ACCESS.ppm },
-  { path: '/ppm', label: 'PPM', icon: ClipboardCheck, access: PAGE_ACCESS.ppm },
-  { path: '/smdb', label: 'SMDB', icon: Zap, access: PAGE_ACCESS.smdb },
 ]

@@ -9,7 +9,7 @@ import { Card } from '../../components/ui/Card'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { PageHeader } from '../../components/ui/PageHeader'
 import { inputClass } from '../../components/ui/styles'
-import { filterByCampus } from '../../lib/campus'
+import { filterBySite } from '../../lib/scope'
 import { visibleSmdbs } from '../../lib/smdb'
 import { useAppState } from '../../store/hooks'
 import type { Alert } from '../../types'
@@ -29,10 +29,11 @@ export default function AlertsPage() {
   const [tab, setTab] = useState<Tab>('active')
   const [source, setSource] = useState<'all' | Alert['source']>('all')
 
-  const boardIds = new Set(visibleSmdbs(user, state.campus, state).map((s) => s.id))
-  const canPredictive = can(user, 'predictive.view')
-  const scoped = filterByCampus(state.alerts, state.campus).filter((a) =>
-    a.smdbId ? boardIds.has(a.smdbId) : a.source === 'predictive' ? canPredictive : true,
+  const boardIds = new Set(visibleSmdbs(user, state.site).map((s) => s.id))
+  const canAssets = can(user, 'assets.view')
+  const canDevices = can(user, 'devices.view')
+  const scoped = filterBySite(state.alerts, user, state.site).filter((a) =>
+    a.smdbId ? boardIds.has(a.smdbId) : a.source === 'predictive' ? canAssets : a.source === 'device' ? canDevices : true,
   )
   const bySource = scoped.filter((a) => source === 'all' || a.source === source)
   const match = TABS.find((t) => t.id === tab)?.match ?? (() => true)
@@ -77,7 +78,8 @@ export default function AlertsPage() {
           <select aria-label="Source" value={source} onChange={(e) => setSource(e.target.value as typeof source)} className={clsx(inputClass, 'w-auto')}>
             <option value="all">All sources</option>
             <option value="smdb">SMDB monitoring</option>
-            <option value="predictive">Predictive maintenance</option>
+            <option value="predictive">Asset health</option>
+            <option value="device">IoT devices</option>
           </select>
         </div>
         <div className="space-y-3 p-5">

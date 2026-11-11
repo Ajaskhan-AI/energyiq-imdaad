@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { ROLE_HOME, ROLE_LABELS, ROLE_ORDER } from '../../auth/roles'
 import { useCurrentUser } from '../../auth/useCurrentUser'
-import { CAMPUS_FILTER_LABELS } from '../../data/campuses'
+import { siteFilterLabel } from '../../lib/scope'
 import { actions } from '../../store/actions'
 import { useAppDispatch, useAppState } from '../../store/hooks'
 import { UserAvatar } from '../ui/UserAvatar'
@@ -101,7 +101,7 @@ export function RoleSwitcher({ compact = false }: { compact?: boolean }) {
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm font-medium text-navy-900">{u.name}</span>
                       <span className="block truncate text-xs text-navy-500">
-                        {u.jobTitle} · {CAMPUS_FILTER_LABELS[u.campus]}
+                        {u.organisation} · {siteFilterLabel(u, 'ALL')}
                       </span>
                     </span>
                     {u.id === user.id && <Check className="size-4 text-teal-600" aria-label="Current user" />}

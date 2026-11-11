@@ -7,11 +7,11 @@ import { useAppDispatch } from '../../store/hooks'
 export function useResetDemo() {
   const dispatch = useAppDispatch()
   const navigate = useNavigate()
-  const { clearAllFaults } = useSimulator()
+  const { resetSimulation } = useSimulator()
   return () => {
     if (!window.confirm('Reset all demo data to the original sample data? This also logs out.')) return
     // Same click → React applies both together, so no stale fault re-raises an alert.
-    clearAllFaults()
+    resetSimulation()
     dispatch(actions.resetDemo())
     navigate('/login')
   }

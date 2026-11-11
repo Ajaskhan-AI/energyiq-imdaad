@@ -7,7 +7,6 @@ import {
   CartesianGrid,
   Cell,
   ComposedChart,
-  Legend,
   Line,
   ReferenceArea,
   ResponsiveContainer,
@@ -15,13 +14,13 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import { DAY_TYPE_LABELS } from '../../lib/calendar'
+import { DAY_TYPE_COLORS, DAY_TYPE_LABELS } from '../../lib/calendar'
 import { fromISODate } from '../../lib/dates'
-import { PERIOD_COLORS } from '../../lib/energyAnalysis'
 import { formatNumber } from '../../lib/format'
-import type { AcademicPeriod, DayType } from '../../types'
+import type { CalendarPeriod, DayType } from '../../types'
 
 const AXIS = { fontSize: 12, fill: '#5f80b8' }
+const PERIOD_DAY_TYPE: Record<CalendarPeriod['type'], DayType> = { holiday: 'holiday', ramadan: 'ramadan', shutdown: 'shutdown', event: 'event' }
 
 export interface DailyPoint {
   t: number
@@ -29,30 +28,33 @@ export interface DailyPoint {
   kWh: number
   expected: number
   flagged: boolean
-  dayType: DayType
 }
 
-/** Legend chips for the period colours. */
+/** Legend chips for the calendar colours. */
 export function PeriodLegend() {
-  const types: DayType[] = ['teaching', 'exams', 'ramadan', 'break', 'summer', 'holiday']
+  const types: DayType[] = ['holiday', 'ramadan', 'shutdown', 'event']
   return (
     <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-navy-600">
       {types.map((t) => (
         <span key={t} className="flex items-center gap-1.5">
-          <span className="size-3 rounded-sm" style={{ background: PERIOD_COLORS[t] }} />
+          <span className="size-3 rounded-sm" style={{ background: DAY_TYPE_COLORS[t] }} />
           {DAY_TYPE_LABELS[t]}
         </span>
       ))}
       <span className="flex items-center gap-1.5">
+        <span className="h-0.5 w-4 border-t-2 border-dashed border-amber-600" />
+        Expected
+      </span>
+      <span className="flex items-center gap-1.5">
         <span className="size-2.5 rounded-full bg-red-600" />
-        Flagged waste
+        Closed day with flagged waste
       </span>
     </div>
   )
 }
 
-/** Daily kWh with academic periods as coloured background bands. */
-export function DailyEnergyChart({ points, periods }: { points: DailyPoint[]; periods: AcademicPeriod[] }) {
+/** Daily kWh with calendar periods as coloured background bands. */
+export function DailyEnergyChart({ points, periods }: { points: DailyPoint[]; periods: CalendarPeriod[] }) {
   if (!points.length) return null
   const min = points[0].t
   const max = points[points.length - 1].t
@@ -63,16 +65,13 @@ export function DailyEnergyChart({ points, periods }: { points: DailyPoint[]; pe
           {periods.map((p) => {
             const x1 = Math.max(min, fromISODate(p.start).getTime())
             const x2 = Math.min(max, addDays(fromISODate(p.end), 1).getTime())
-            return x2 > x1 ? <ReferenceArea key={p.id} x1={x1} x2={x2} fill={PERIOD_COLORS[p.type]} fillOpacity={0.55} ifOverflow="hidden" /> : null
+            return x2 > x1 ? <ReferenceArea key={p.id} x1={x1} x2={x2} fill={DAY_TYPE_COLORS[PERIOD_DAY_TYPE[p.type]]} fillOpacity={0.55} ifOverflow="hidden" /> : null
           })}
           <CartesianGrid stroke="#e3eaf5" vertical={false} />
           <XAxis dataKey="t" type="number" scale="time" domain={[min, max]} tickFormatter={(t: number) => format(t, 'd MMM')} tick={AXIS} />
           <YAxis tickFormatter={(v: number) => `${Math.round(v / 1000)}k`} tick={AXIS} width={44} />
           <Tooltip
-            labelFormatter={(t, payload) => {
-              const p = payload?.[0]?.payload as DailyPoint | undefined
-              return `${format(Number(t), 'EEE d MMM yyyy')}${p ? ` · ${DAY_TYPE_LABELS[p.dayType]}` : ''}`
-            }}
+            labelFormatter={(t) => format(Number(t), 'EEE d MMM yyyy')}
             formatter={(v, name) => [`${formatNumber(Number(v))} kWh`, name === 'expected' ? 'Expected' : 'Actual']}
           />
           <Area
@@ -98,41 +97,61 @@ export function DailyEnergyChart({ points, periods }: { points: DailyPoint[]; pe
   )
 }
 
-/** Average kWh per weekday for two periods side by side. */
-export function PeriodCompareChart({ data, labelA, labelB }: { data: Array<{ day: string; a: number; b: number }>; labelA: string; labelB: string }) {
+/** 24 hourly bars for one day with the expected profile; after-hours bars in amber. */
+export function HourlyChart({ hours, expected, afterHours }: { hours: number[]; expected?: number[]; afterHours: boolean[] }) {
+  const data = hours.map((kWh, hour) => ({ hour: String(hour).padStart(2, '0'), kWh: Math.round(kWh), expected: expected ? Math.round(expected[hour]) : undefined, after: afterHours[hour] }))
   return (
-    <div className="h-64 w-full">
+    <div className="h-48 w-full">
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} margin={{ top: 10, right: 12, bottom: 0, left: 4 }}>
+        <ComposedChart data={data} margin={{ top: 6, right: 6, bottom: 0, left: -8 }}>
           <CartesianGrid stroke="#e3eaf5" vertical={false} />
-          <XAxis dataKey="day" tick={AXIS} />
-          <YAxis tickFormatter={(v: number) => `${Math.round(v / 1000)}k`} tick={AXIS} width={44} />
-          <Tooltip formatter={(v, name) => [`${formatNumber(Number(v))} kWh/day`, name === 'a' ? labelA : labelB]} />
-          <Legend formatter={(v) => (v === 'a' ? labelA : labelB)} wrapperStyle={{ fontSize: 12 }} />
-          <Bar dataKey="a" fill="#2a4a82" radius={[3, 3, 0, 0]} isAnimationActive={false} />
-          <Bar dataKey="b" fill="#f59e0b" radius={[3, 3, 0, 0]} isAnimationActive={false} />
-        </BarChart>
+          <XAxis dataKey="hour" tick={{ ...AXIS, fontSize: 10 }} interval={1} />
+          <YAxis tick={{ ...AXIS, fontSize: 10 }} width={40} />
+          <Tooltip formatter={(v, name) => [`${formatNumber(Number(v))} kWh`, name === 'expected' ? 'Expected' : 'Actual']} labelFormatter={(h) => `${h}:00`} />
+          <Bar dataKey="kWh" isAnimationActive={false}>
+            {data.map((d) => (
+              <Cell key={d.hour} fill={d.after ? '#f59e0b' : '#2a4a82'} />
+            ))}
+          </Bar>
+          {expected && <Line type="stepAfter" dataKey="expected" stroke="#0f766e" strokeWidth={2} strokeDasharray="4 3" dot={false} isAnimationActive={false} />}
+        </ComposedChart>
       </ResponsiveContainer>
     </div>
   )
 }
 
-/** 24 hourly bars for one day; night hours highlighted. */
-export function HourlyChart({ hours }: { hours: number[] }) {
-  const data = hours.map((kWh, hour) => ({ hour: String(hour).padStart(2, '0'), kWh, night: hour < 6 || hour >= 20 }))
+/** Horizontal bars for a "share by category" breakdown. */
+export function BreakdownBars({ rows }: { rows: Array<{ label: string; value: number; sub?: string }> }) {
+  const max = Math.max(1, ...rows.map((r) => r.value))
   return (
-    <div className="h-44 w-full">
+    <ul className="space-y-3">
+      {rows.map((r) => (
+        <li key={r.label} className="grid grid-cols-[minmax(0,11rem)_1fr_7rem] items-center gap-3 text-sm">
+          <span className="truncate text-navy-800">{r.label}</span>
+          <span className="h-2.5 rounded-full bg-navy-50">
+            <span className="block h-2.5 rounded-full bg-navy-500" style={{ width: `${(r.value / max) * 100}%` }} />
+          </span>
+          <span className="text-right tabular-nums">
+            {formatNumber(r.value / 1000, 1)} MWh
+            {r.sub && <span className="block text-xs text-navy-500">{r.sub}</span>}
+          </span>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+/** Simple bar chart: one value per item. */
+export function SimpleBarChart({ data, unit, color = '#2a4a82' }: { data: Array<{ label: string; value: number }>; unit: string; color?: string }) {
+  return (
+    <div className="h-64 w-full">
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} margin={{ top: 6, right: 6, bottom: 0, left: -8 }}>
+        <BarChart data={data} margin={{ top: 10, right: 12, bottom: 0, left: 4 }}>
           <CartesianGrid stroke="#e3eaf5" vertical={false} />
-          <XAxis dataKey="hour" tick={{ ...AXIS, fontSize: 10 }} interval={1} />
-          <YAxis tick={{ ...AXIS, fontSize: 10 }} width={40} />
-          <Tooltip formatter={(v) => [`${formatNumber(Number(v))} kWh`, 'Energy']} labelFormatter={(h) => `${h}:00`} />
-          <Bar dataKey="kWh" isAnimationActive={false}>
-            {data.map((d) => (
-              <Cell key={d.hour} fill={d.night ? '#f59e0b' : '#2a4a82'} />
-            ))}
-          </Bar>
+          <XAxis dataKey="label" tick={{ ...AXIS, fontSize: 11 }} interval={0} />
+          <YAxis tick={AXIS} width={44} />
+          <Tooltip formatter={(v) => [`${formatNumber(Number(v))} ${unit}`, '']} />
+          <Bar dataKey="value" fill={color} radius={[3, 3, 0, 0]} isAnimationActive={false} />
         </BarChart>
       </ResponsiveContainer>
     </div>
@@ -147,15 +166,15 @@ export interface HeatmapRow {
 }
 
 /** Hour × day heatmap (one row per day). Darker = more energy. */
-export function Heatmap({ rows }: { rows: HeatmapRow[] }) {
+export function Heatmap({ rows, openHours }: { rows: HeatmapRow[]; openHours: [number, number] }) {
   const max = Math.max(1, ...rows.flatMap((r) => r.hours))
   return (
     <div className="overflow-x-auto">
       <div className="min-w-[760px]">
-        <div className="grid grid-cols-[9rem_repeat(24,minmax(0,1fr))] gap-px text-[10px] text-navy-500">
+        <div className="grid grid-cols-[11rem_repeat(24,minmax(0,1fr))] gap-px text-[10px] text-navy-500">
           <span />
           {Array.from({ length: 24 }, (_, h) => (
-            <span key={h} className="text-center">
+            <span key={h} className={clsx('text-center', (h < openHours[0] || h >= openHours[1]) && 'text-amber-700')}>
               {h % 3 === 0 ? String(h).padStart(2, '0') : ''}
             </span>
           ))}
@@ -163,9 +182,11 @@ export function Heatmap({ rows }: { rows: HeatmapRow[] }) {
             <div key={row.date} className="contents">
               <span className={clsx('flex items-center gap-1.5 pr-2 text-xs', row.flagged ? 'font-semibold text-red-700' : 'text-navy-700')}>
                 {format(fromISODate(row.date), 'EEE d MMM')}
-                <span className="rounded px-1 text-[10px]" style={{ background: PERIOD_COLORS[row.dayType] }}>
-                  {DAY_TYPE_LABELS[row.dayType]}
-                </span>
+                {row.dayType !== 'workday' && (
+                  <span className="rounded px-1 text-[10px]" style={{ background: DAY_TYPE_COLORS[row.dayType] }}>
+                    {DAY_TYPE_LABELS[row.dayType].split(' ')[0]}
+                  </span>
+                )}
               </span>
               {row.hours.map((kWh, h) => {
                 const level = kWh / max
@@ -181,10 +202,10 @@ export function Heatmap({ rows }: { rows: HeatmapRow[] }) {
             </div>
           ))}
         </div>
-        <div className="mt-3 flex items-center gap-2 text-xs text-navy-500">
+        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-navy-500">
           Low
           <span className="h-2 w-32 rounded-full" style={{ background: 'linear-gradient(90deg, rgba(16,33,63,0.06), rgba(16,33,63,0.96))' }} />
-          High · <span className="font-semibold text-red-700">red date</span> = flagged as waste
+          High · <span className="text-amber-700">amber hours</span> = outside opening hours · <span className="font-semibold text-red-700">red date</span> = flagged waste
         </div>
       </div>
     </div>

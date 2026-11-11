@@ -1,46 +1,34 @@
 import { Menu, RotateCcw } from 'lucide-react'
-import type { CampusFilter } from '../../types'
-import { CampusSwitcher } from './CampusSwitcher'
+import type { SiteFilter } from '../../types'
+import { BrandMark } from './BrandMark'
 import { RoleSwitcher } from './RoleSwitcher'
 import { SampleBadge } from './SampleBadge'
+import { SiteSwitcher } from './SiteSwitcher'
 
 interface Props {
-  campus: CampusFilter
-  /** True for single-campus users: campus is shown but cannot be changed. */
-  campusLocked: boolean
-  onCampusChange: (value: CampusFilter) => void
+  site: SiteFilter
+  onSiteChange: (value: SiteFilter) => void
   onOpenMenu: () => void
   /** Presenter control: restore the original sample data. */
   onReset: () => void
 }
 
-export function TopBar({ campus, campusLocked, onCampusChange, onOpenMenu, onReset }: Props) {
+export function TopBar({ site, onSiteChange, onOpenMenu, onReset }: Props) {
   return (
     <header className="sticky top-0 z-20 border-b border-navy-100 bg-white/95 backdrop-blur print:hidden">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 sm:px-6">
-        <button
-          type="button"
-          onClick={onOpenMenu}
-          className="rounded-md p-1.5 text-navy-700 hover:bg-navy-50 lg:hidden"
-          aria-label="Open menu"
-        >
+        <button type="button" onClick={onOpenMenu} className="rounded-md p-1.5 text-navy-700 hover:bg-navy-50 lg:hidden" aria-label="Open menu">
           <Menu className="size-6" />
         </button>
 
-        {/* Logo text */}
-        <div className="flex items-baseline gap-2">
-          <span className="text-lg font-bold tracking-tight text-navy-900">
-            Kuroshio <span className="text-teal-600">AI</span>
-          </span>
-          <span className="hidden text-sm font-medium text-navy-400 sm:inline">FacilityIQ</span>
-        </div>
+        <BrandMark />
 
         <div className="ml-auto flex flex-wrap items-center gap-3">
           {/* Wrapper controls visibility: the badge sets its own display class */}
           <div className="hidden md:block">
             <SampleBadge />
           </div>
-          <CampusSwitcher value={campus} onChange={onCampusChange} locked={campusLocked} />
+          <SiteSwitcher value={site} onChange={onSiteChange} />
           <button
             type="button"
             onClick={onReset}

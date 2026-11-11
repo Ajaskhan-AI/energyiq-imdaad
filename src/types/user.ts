@@ -1,30 +1,28 @@
-import type { CampusFilter } from './campus'
-
-/** Logged-in demo roles. The public "Requester" has no login, so it is not a Role. */
+/** Logged-in demo roles. */
 export type Role =
-  | 'fm_manager'
-  | 'fm_engineer'
-  | 'technician'
-  | 'helpdesk'
-  | 'sustainability'
-  | 'admin'
+  | 'fm_manager' // Imdaad: FM / operations manager, whole portfolio
+  | 'energy_engineer' // Imdaad: energy & MEP engineer, whole portfolio
+  | 'site_supervisor' // Imdaad: supervisor for one or two sites
+  | 'client_viewer' // Imdaad's customer (property owner): own sites, read-only
+  | 'admin' // Kuroshio AI system admin
 
 export interface User {
   id: string
   name: string
   role: Role
-  /** 'ALL' = both campuses. Single-campus users only ever see their campus. */
-  campus: CampusFilter
+  /** Sites this user may see. 'ALL' = whole portfolio. */
+  siteIds: string[] | 'ALL'
+  /** Client viewers: the client they belong to. */
+  clientId?: string
   initials: string
   jobTitle: string
-  /** Set for technician users: links the login to a Technician record. */
-  technicianId?: string
+  organisation: string
 }
 
-/** Who did something. Recorded on every ticket/PPM/alert action. */
+/** Who did something. Recorded on every alert / work-order action. */
 export interface Actor {
   name: string
-  role: Role | 'requester' | 'system'
+  role: Role | 'system'
   userId?: string
 }
 

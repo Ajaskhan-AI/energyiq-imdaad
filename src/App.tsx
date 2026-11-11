@@ -11,25 +11,21 @@ import NotFoundPage from './pages/NotFoundPage'
 
 // Each page is loaded on first visit (code splitting), so the app opens faster.
 const LoginPage = lazy(() => import('./pages/LoginPage'))
-const ComplaintsPage = lazy(() => import('./pages/complaints/ComplaintsPage'))
-const RoomQrPage = lazy(() => import('./pages/complaints/RoomQrPage'))
-const TicketDetailPage = lazy(() => import('./pages/complaints/TicketDetailPage'))
-const EnergyPage = lazy(() => import('./pages/energy/EnergyPage'))
-const HowItWorksPage = lazy(() => import('./pages/howItWorks/HowItWorksPage'))
 const OverviewPage = lazy(() => import('./pages/overview/OverviewPage'))
-const AssetPage = lazy(() => import('./pages/ppm/AssetPage'))
-const PpmPage = lazy(() => import('./pages/ppm/PpmPage'))
-const ScanPage = lazy(() => import('./pages/ppm/ScanPage'))
-const TaskPage = lazy(() => import('./pages/ppm/TaskPage'))
-const PredictiveAssetPage = lazy(() => import('./pages/predictive/PredictiveAssetPage'))
-const PredictivePage = lazy(() => import('./pages/predictive/PredictivePage'))
-const ReportProblemPage = lazy(() => import('./pages/public/ReportProblemPage'))
-const ReportPage = lazy(() => import('./pages/report/ReportPage'))
-const SettingsPage = lazy(() => import('./pages/settings/SettingsPage'))
+const SmdbPage = lazy(() => import('./pages/smdb/SmdbPage'))
 const AlertsPage = lazy(() => import('./pages/smdb/AlertsPage'))
 const SmdbDetailPage = lazy(() => import('./pages/smdb/SmdbDetailPage'))
-const SmdbPage = lazy(() => import('./pages/smdb/SmdbPage'))
-const MyJobsPage = lazy(() => import('./pages/technician/MyJobsPage'))
+const EnergyPage = lazy(() => import('./pages/energy/EnergyPage'))
+const PowerQualityPage = lazy(() => import('./pages/powerQuality/PowerQualityPage'))
+const AssetsPage = lazy(() => import('./pages/assets/AssetsPage'))
+const AssetDetailPage = lazy(() => import('./pages/assets/AssetDetailPage'))
+const BillingPage = lazy(() => import('./pages/billing/BillingPage'))
+const WorkOrdersPage = lazy(() => import('./pages/workOrders/WorkOrdersPage'))
+const WorkOrderDetailPage = lazy(() => import('./pages/workOrders/WorkOrderDetailPage'))
+const DevicesPage = lazy(() => import('./pages/devices/DevicesPage'))
+const ReportPage = lazy(() => import('./pages/report/ReportPage'))
+const HowItWorksPage = lazy(() => import('./pages/howItWorks/HowItWorksPage'))
+const SettingsPage = lazy(() => import('./pages/settings/SettingsPage'))
 
 /** "/" sends each role to its own home page. */
 function HomeRedirect() {
@@ -38,47 +34,37 @@ function HomeRedirect() {
 }
 
 /** Shorthand: wrap a page in its permission guard. */
-const guard = (access: readonly Permission[], page: ReactNode) => (
-  <RequirePermission anyOf={access}>{page}</RequirePermission>
-)
+const guard = (access: readonly Permission[], page: ReactNode) => <RequirePermission anyOf={access}>{page}</RequirePermission>
 
 /**
- * HashRouter keeps the route after a "#" (e.g. /#/complaints), so the app
+ * HashRouter keeps the route after a "#" (e.g. /#/energy), so the app
  * works on any static host without server rewrite rules.
  */
 export default function App() {
   return (
     <HashRouter>
-      {/* Shown while a page's code is downloading (the shells have their own inner fallback) */}
       <Suspense fallback={<PageLoader fullScreen />}>
         <Routes>
-          {/* Public pages: no login needed */}
           <Route path="login" element={<LoginPage />} />
-          <Route path="report/:roomId" element={<ReportProblemPage />} />
-  
+
           {/* Everything else needs a demo login; pages render inside the shell's <Outlet /> */}
           <Route element={<ProtectedLayout />}>
             <Route index element={<HomeRedirect />} />
             <Route path="overview" element={guard(PAGE_ACCESS.overview, <OverviewPage />)} />
             <Route path="smdb" element={guard(PAGE_ACCESS.smdb, <SmdbPage />)} />
             <Route path="smdb/alerts" element={guard(PAGE_ACCESS.smdb, <AlertsPage />)} />
-            {/* The page itself checks which boards a technician may open */}
+            {/* Detail pages also check the user's sites themselves */}
             <Route path="smdb/:smdbId" element={guard(PAGE_ACCESS.smdb, <SmdbDetailPage />)} />
-            <Route path="predictive" element={guard(PAGE_ACCESS.predictive, <PredictivePage />)} />
-            <Route path="predictive/:assetId" element={guard(PAGE_ACCESS.predictive, <PredictiveAssetPage />)} />
-            <Route path="ppm" element={guard(PAGE_ACCESS.ppm, <PpmPage />)} />
-            <Route path="ppm/scan" element={guard(PAGE_ACCESS.ppm, <ScanPage />)} />
-            <Route path="ppm/assets/:assetId" element={guard(PAGE_ACCESS.ppm, <AssetPage />)} />
-            {/* Technicians may open their own tasks; the page checks ownership itself */}
-            <Route path="ppm/tasks/:taskId" element={guard(PAGE_ACCESS.ppm, <TaskPage />)} />
-            <Route path="complaints" element={guard(PAGE_ACCESS.complaints, <ComplaintsPage />)} />
-            <Route path="complaints/rooms" element={guard(PAGE_ACCESS.complaints, <RoomQrPage />)} />
-            {/* Technicians may open their own tickets; the page checks ownership itself */}
-            <Route path="complaints/:ticketId" element={guard(['tickets.view', 'tickets.viewOwn'], <TicketDetailPage />)} />
             <Route path="energy" element={guard(PAGE_ACCESS.energy, <EnergyPage />)} />
+            <Route path="power-quality" element={guard(PAGE_ACCESS.powerQuality, <PowerQualityPage />)} />
+            <Route path="assets" element={guard(PAGE_ACCESS.assets, <AssetsPage />)} />
+            <Route path="assets/:assetId" element={guard(PAGE_ACCESS.assets, <AssetDetailPage />)} />
+            <Route path="billing" element={guard(PAGE_ACCESS.billing, <BillingPage />)} />
+            <Route path="work-orders" element={guard(PAGE_ACCESS.workOrders, <WorkOrdersPage />)} />
+            <Route path="work-orders/:workOrderId" element={guard(PAGE_ACCESS.workOrders, <WorkOrderDetailPage />)} />
+            <Route path="devices" element={guard(PAGE_ACCESS.devices, <DevicesPage />)} />
             <Route path="report" element={guard(PAGE_ACCESS.report, <ReportPage />)} />
             <Route path="how-it-works" element={guard(PAGE_ACCESS.howItWorks, <HowItWorksPage />)} />
-            <Route path="my-jobs" element={guard(PAGE_ACCESS.myJobs, <MyJobsPage />)} />
             <Route path="settings" element={guard(PAGE_ACCESS.settings, <SettingsPage />)} />
             <Route path="*" element={<NotFoundPage />} />
           </Route>

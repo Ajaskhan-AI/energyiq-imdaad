@@ -1,7 +1,6 @@
-import type { CampusId } from './campus'
 import type { ActionStamp, Actor } from './user'
 
-export type AlertSource = 'smdb' | 'predictive' | 'energy'
+export type AlertSource = 'smdb' | 'predictive' | 'device'
 export type AlertSeverity = 'warning' | 'critical'
 
 export interface AlertNote {
@@ -16,14 +15,15 @@ export interface Alert {
   severity: AlertSeverity
   title: string
   message: string
-  campus: CampusId
+  siteId: string
   buildingId: string
   smdbId?: string
   assetId?: string
+  nodeId?: string
   createdAt: string
   acknowledged?: ActionStamp
   notes: AlertNote[]
-  /** Ticket created from this alert ("Create work order"). */
+  /** Work order created from this alert. */
   workOrderId?: string
   /** Condition that raised it (e.g. 'trip', 'high_load'), so the simulator can auto-resolve it. */
   code?: string

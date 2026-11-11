@@ -1,6 +1,6 @@
-import { FlaskConical, PowerOff, RotateCcw, TrendingUp } from 'lucide-react'
+import { FlaskConical, PowerOff, RotateCcw, TrendingDown, TrendingUp } from 'lucide-react'
 import { useState } from 'react'
-import { BUILDINGS } from '../../data/buildings'
+import { BUILDINGS } from '../../data/sites'
 import { SMDBS, getSmdb } from '../../data/smdbs'
 import { useSimulator } from '../../sim/simulatorContext'
 import { Button } from '../ui/Button'
@@ -14,7 +14,7 @@ import { useToast } from '../ui/toastContext'
 export function FaultControls({ smdbId }: { smdbId?: string }) {
   const { faults, injectFault, clearFault } = useSimulator()
   const toast = useToast()
-  const [selected, setSelected] = useState(smdbId ?? 'SMDB-AIN-B2-02')
+  const [selected, setSelected] = useState(smdbId ?? 'SMDB-HBT-B1-04')
   const target = smdbId ?? selected
   const active = faults[target]
   const name = getSmdb(target)?.name ?? target
@@ -61,6 +61,17 @@ export function FaultControls({ smdbId }: { smdbId?: string }) {
         >
           <TrendingUp className="size-4" aria-hidden />
           Simulate overload
+        </Button>
+        <Button
+          variant="secondary"
+          onClick={() => {
+            injectFault(target, 'low_pf')
+            toast.show(`Simulating a low power factor on ${name}`, 'info')
+          }}
+          disabled={active === 'low_pf'}
+        >
+          <TrendingDown className="size-4" aria-hidden />
+          Simulate low PF
         </Button>
         {active && (
           <Button

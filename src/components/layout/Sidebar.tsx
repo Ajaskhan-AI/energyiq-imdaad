@@ -39,8 +39,8 @@ export function Sidebar({ mobileOpen, onClose }: Props) {
             <Building2 className="size-5" aria-hidden />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold text-white">Al Ain University</p>
-            <p className="truncate text-xs text-navy-300">Facilities Management</p>
+            <p className="truncate text-sm font-semibold text-white">EnergyIQ for FM</p>
+            <p className="truncate text-xs text-navy-300">Prepared for Imdaad</p>
           </div>
           <button
             type="button"
@@ -74,7 +74,7 @@ export function Sidebar({ mobileOpen, onClose }: Props) {
         </nav>
 
         <div className="border-t border-navy-800 px-5 py-4 text-xs text-navy-400">
-          Powered by <span className="font-semibold text-navy-200">Kuroshio AI</span> FacilityIQ
+          Powered by <span className="font-semibold text-navy-200">Kuroshio AI</span> · Selec meters + Kuroshio IoT
         </div>
       </aside>
     </>

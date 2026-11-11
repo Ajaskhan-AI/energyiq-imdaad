@@ -11,17 +11,15 @@ import { Modal } from '../../components/ui/Modal'
 import { inputClass } from '../../components/ui/styles'
 import { useToast } from '../../components/ui/toastContext'
 import { UserAvatar } from '../../components/ui/UserAvatar'
-import { CAMPUS_FILTER_LABELS } from '../../data/campuses'
+import { CLIENTS, getClient, SITES } from '../../data/sites'
+import { siteFilterLabel } from '../../lib/scope'
 import { actions } from '../../store/actions'
 import { useAppDispatch, useAppState } from '../../store/hooks'
-import type { CampusFilter, Role, User } from '../../types'
+import type { Role, User } from '../../types'
 
-/** Roles that only ever work on one campus. */
-const SINGLE_CAMPUS: Role[] = ['fm_engineer', 'technician']
-
-/** Users & roles: Admin can edit and add demo users; FM Manager can view. */
+/** Users & roles: Admin can edit and add demo users; FM Operations Manager can view. */
 export function UsersSection() {
-  const { users, technicians } = useAppState()
+  const { users } = useAppState()
   const user = useCurrentUser()
   const canManage = can(user, 'users.manage')
   const [editing, setEditing] = useState<User | 'new' | null>(null)
@@ -34,7 +32,7 @@ export function UsersSection() {
           <Users className="size-5 text-navy-600" aria-hidden /> Users & roles
         </span>
       }
-      subtitle={canManage ? 'Change a user’s role or campus, or add a demo user. Changes apply immediately.' : 'View only for your role — the System Admin manages users.'}
+      subtitle={canManage ? 'Change a user’s role or sites, or add a demo user. Changes apply immediately.' : 'View only for your role. The System Admin manages users.'}
       actions={
         canManage && (
           <Button size="sm" variant="teal" onClick={() => setEditing('new')}>
@@ -51,8 +49,8 @@ export function UsersSection() {
             <tr>
               <th className="px-5 py-3">User</th>
               <th className="px-3 py-3">Role</th>
-              <th className="px-3 py-3">Campus</th>
-              <th className="px-3 py-3">Technician record</th>
+              <th className="px-3 py-3">Organisation</th>
+              <th className="px-3 py-3">Sites</th>
               {canManage && <th className="px-5 py-3 text-right">Edit</th>}
             </tr>
           </thead>
@@ -71,8 +69,8 @@ export function UsersSection() {
                   </span>
                 </td>
                 <td className="px-3 py-2.5 text-navy-700">{ROLE_LABELS[u.role]}</td>
-                <td className="px-3 py-2.5 text-navy-700">{CAMPUS_FILTER_LABELS[u.campus]}</td>
-                <td className="px-3 py-2.5 text-navy-600">{technicians.find((t) => t.id === u.technicianId)?.name ?? '—'}</td>
+                <td className="px-3 py-2.5 text-navy-700">{u.organisation}</td>
+                <td className="px-3 py-2.5 text-navy-700">{u.siteIds === 'ALL' ? 'All sites' : u.siteIds.map((id) => SITES.find((s) => s.id === id)?.shortName ?? id).join(', ')}</td>
                 {canManage && (
                   <td className="px-5 py-2.5 text-right">
                     <Button
@@ -103,40 +101,42 @@ function initialsOf(name: string): string {
 }
 
 function UserModal({ user, onClose }: { user?: User; onClose: () => void }) {
-  const { technicians, users } = useAppState()
   const dispatch = useAppDispatch()
   const toast = useToast()
   const [name, setName] = useState(user?.name ?? '')
   const [jobTitle, setJobTitle] = useState(user?.jobTitle ?? '')
-  const [role, setRole] = useState<Role>(user?.role ?? 'fm_engineer')
-  const [campus, setCampus] = useState<CampusFilter>(user?.campus ?? 'AIN')
-  const [technicianId, setTechnicianId] = useState(user?.technicianId ?? '')
+  const [role, setRole] = useState<Role>(user?.role ?? 'site_supervisor')
+  const [allSites, setAllSites] = useState(user ? user.siteIds === 'ALL' : false)
+  const [siteIds, setSiteIds] = useState<string[]>(user && user.siteIds !== 'ALL' ? user.siteIds : [])
+  const [clientId, setClientId] = useState(user?.clientId ?? CLIENTS[0].id)
   const [showErrors, setShowErrors] = useState(false)
 
-  const singleCampus = SINGLE_CAMPUS.includes(role)
-  const effectiveCampus: CampusFilter = singleCampus && campus === 'ALL' ? 'AIN' : campus
-  const campusTechs = technicians.filter((t) => effectiveCampus === 'ALL' || t.campus === effectiveCampus)
-  const linkedElsewhere = (techId: string) => users.some((u) => u.technicianId === techId && u.id !== user?.id)
+  const isClient = role === 'client_viewer'
+  // Client viewers can only be given their own client's sites.
+  const siteChoices = isClient ? SITES.filter((s) => s.clientId === clientId) : SITES
+  const chosen = siteIds.filter((id) => siteChoices.some((s) => s.id === id))
   const errors = {
     name: name.trim().length < 3 ? 'Enter a full name.' : undefined,
-    technician: role === 'technician' && !campusTechs.some((t) => t.id === technicianId) ? 'Link this login to a technician on the same campus.' : undefined,
+    sites: !allSites && chosen.length === 0 ? 'Pick at least one site.' : undefined,
   }
+  const toggle = (id: string) => setSiteIds((list) => (list.includes(id) ? list.filter((x) => x !== id) : [...list, id]))
 
   const submit = (event: FormEvent) => {
     event.preventDefault()
     setShowErrors(true)
-    if (errors.name || errors.technician) return
+    if (errors.name || errors.sites) return
     const saved: User = {
       id: user?.id ?? `u-demo-${Date.now().toString(36)}`,
       name: name.trim(),
       role,
-      campus: effectiveCampus,
+      siteIds: allSites && !isClient ? 'ALL' : chosen,
+      ...(isClient ? { clientId } : {}),
       initials: initialsOf(name),
       jobTitle: jobTitle.trim() || ROLE_LABELS[role],
-      ...(role === 'technician' ? { technicianId } : {}),
+      organisation: isClient ? `${getClient(clientId)?.name ?? ''} · client` : role === 'admin' ? 'Kuroshio AI' : 'Imdaad · FM provider',
     }
     dispatch(actions.saveUser(saved))
-    toast.show(user ? `${saved.name} updated` : `${saved.name} added — available on the login screen and in Switch role`)
+    toast.show(user ? `${saved.name} updated` : `${saved.name} added: available on the login screen and in Switch role`)
     onClose()
   }
 
@@ -174,27 +174,36 @@ function UserModal({ user, onClose }: { user?: User; onClose: () => void }) {
               ))}
             </select>
           </Field>
-          <Field label="Campus" htmlFor="um-campus" required hint={singleCampus ? 'Engineers and technicians work on one campus.' : undefined}>
-            <select id="um-campus" value={effectiveCampus} onChange={(e) => setCampus(e.target.value as CampusFilter)} className={inputClass}>
-              {!singleCampus && <option value="ALL">Both campuses</option>}
-              <option value="AIN">Al Ain</option>
-              <option value="AUH">Abu Dhabi</option>
-            </select>
-          </Field>
+          {isClient && (
+            <Field label="Client" htmlFor="um-client" required>
+              <select id="um-client" value={clientId} onChange={(e) => setClientId(e.target.value)} className={inputClass}>
+                {CLIENTS.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          )}
         </div>
-        {role === 'technician' && (
-          <Field label="Technician record" htmlFor="um-tech" required error={showErrors ? errors.technician : undefined} hint="Their jobs and PPM tasks come from this record.">
-            <select id="um-tech" value={technicianId} onChange={(e) => setTechnicianId(e.target.value)} className={inputClass}>
-              <option value="">Select a technician…</option>
-              {campusTechs.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.name} — {t.trade.toUpperCase()}
-                  {linkedElsewhere(t.id) ? ' (already has a login)' : ''}
-                </option>
+        <Field label="Sites" required error={showErrors ? errors.sites : undefined} hint={isClient ? 'Client users only see their own sites.' : undefined}>
+          <div className="space-y-2 rounded-lg border border-navy-100 p-3">
+            {!isClient && (
+              <label className="flex items-center gap-2 text-sm font-medium text-navy-800">
+                <input type="checkbox" checked={allSites} onChange={(e) => setAllSites(e.target.checked)} className="size-4 accent-teal-600" />
+                All sites (whole portfolio)
+              </label>
+            )}
+            {(!allSites || isClient) &&
+              siteChoices.map((s) => (
+                <label key={s.id} className="flex items-center gap-2 text-sm text-navy-700">
+                  <input type="checkbox" checked={chosen.includes(s.id)} onChange={() => toggle(s.id)} className="size-4 accent-teal-600" />
+                  {s.name} <span className="text-xs text-navy-400">· {getClient(s.clientId)?.name}</span>
+                </label>
               ))}
-            </select>
-          </Field>
-        )}
+          </div>
+        </Field>
+        <p className="text-xs text-navy-500">Preview: {siteFilterLabel({ ...(user ?? ({} as User)), siteIds: allSites && !isClient ? 'ALL' : chosen } as User, 'ALL')}</p>
       </form>
     </Modal>
   )

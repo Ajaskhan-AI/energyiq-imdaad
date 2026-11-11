@@ -1,4 +1,4 @@
-import { ArrowLeft, Cpu, MapPin, SlidersHorizontal, TriangleAlert, Zap } from 'lucide-react'
+import { ArrowLeft, Cpu, MapPin, Receipt, SlidersHorizontal, TriangleAlert, Zap } from 'lucide-react'
 import { Link, useParams } from 'react-router'
 import { can } from '../../auth/permissions'
 import { useCurrentUser } from '../../auth/useCurrentUser'
@@ -9,11 +9,11 @@ import { LoadTrendChart } from '../../components/smdb/LoadTrendChart'
 import { LiveIndicator, SmdbStatusBadge } from '../../components/smdb/SmdbBits'
 import { Card } from '../../components/ui/Card'
 import { EmptyState } from '../../components/ui/EmptyState'
-import { getBuilding } from '../../data/buildings'
-import { DEFAULT_THRESHOLDS, getSmdb } from '../../data/smdbs'
+import { getBuilding, getSite } from '../../data/sites'
+import { DEFAULT_THRESHOLDS, LOAD_TYPE_LABELS, getSmdb } from '../../data/smdbs'
+import { canSeeSite } from '../../lib/scope'
 import { formatNumber } from '../../lib/format'
-import { visibleSmdbs } from '../../lib/smdb'
-import { boardPeakKw } from '../../sim/smdbModel'
+import { boardPeakKw } from '../../sim/loadModel'
 import { useSimulator } from '../../sim/simulatorContext'
 import { useAppState } from '../../store/hooks'
 import AccessRestrictedPage from '../AccessRestrictedPage'
@@ -35,15 +35,17 @@ export default function SmdbDetailPage() {
       </EmptyState>
     )
   }
-  if (!visibleSmdbs(user, user?.campus ?? 'ALL', state).some((s) => s.id === smdb.id)) return <AccessRestrictedPage />
+  if (!can(user, 'smdb.view') || !canSeeSite(user, smdb.siteId)) return <AccessRestrictedPage />
 
   const reading = sim.readings[smdb.id]
   const health = sim.health[smdb.id]
   const t = state.thresholds[smdb.id] ?? DEFAULT_THRESHOLDS
   const building = getBuilding(smdb.buildingId)
+  const site = getSite(smdb.siteId)
+  const offline = health.status === 'offline'
   const ratedKw = (smdb.ratedCurrentA * Math.sqrt(3) * 400 * 0.92) / 1000
   const avgV = reading.phases.reduce((s, p) => s + p.voltageV, 0) / 3
-  const points = [...sim.history[smdb.id], { t: sim.updatedAt, kW: reading.kW, loadPct: Math.round(health.loadPct * 10) / 10 }]
+  const points = offline ? sim.history[smdb.id] : [...sim.history[smdb.id], { t: sim.updatedAt, kW: reading.kW, loadPct: Math.round(health.loadPct * 10) / 10 }]
   const alerts = state.alerts.filter((a) => a.smdbId === smdb.id).sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 10)
   const low = t.nominalVoltageV * (1 - t.voltageTolPct / 100)
   const high = t.nominalVoltageV * (1 + t.voltageTolPct / 100)
@@ -63,9 +65,9 @@ export default function SmdbDetailPage() {
           </div>
           <p className="mt-1 flex flex-wrap items-center gap-x-2 text-sm text-navy-600">
             <MapPin className="size-4" aria-hidden />
-            {building?.name} · {smdb.location}
+            {site?.name} · {building?.shortName} · {smdb.location}
             <span className="text-navy-400">
-              · {smdb.id} · meter {smdb.meterId} · {smdb.ratedCurrentA} A breaker
+              · {smdb.id} · {LOAD_TYPE_LABELS[smdb.loadType]} · {smdb.ratedCurrentA} A breaker
             </span>
           </p>
         </div>
@@ -97,7 +99,7 @@ export default function SmdbDetailPage() {
               <Gauge label="Load (max phase)" value={health.loadPct} display={`${Math.round(health.loadPct)}%`} unit="of breaker rating" min={0} max={120} warnAt={t.warnLoadPct} critAt={t.critLoadPct} />
               <Gauge label="Active power" value={reading.kW} display={formatNumber(reading.kW)} unit="kW" min={0} max={Math.max(ratedKw, boardPeakKw(smdb))} />
               <Gauge label="Avg voltage (L-N)" value={avgV} display={avgV.toFixed(1)} unit="V" min={190} max={270} warnAt={high} lowWarnAt={low} />
-              <Gauge label="Power factor" value={reading.pf} display={reading.pf.toFixed(2)} unit="PF" min={0.7} max={1} lowWarnAt={0.85} />
+              <Gauge label="Power factor" value={reading.pf} display={reading.pf.toFixed(2)} unit="PF" min={0.7} max={1} lowWarnAt={t.minPf} />
             </div>
           </Card>
 
@@ -126,7 +128,8 @@ export default function SmdbDetailPage() {
                   <th className="px-4 py-2 text-left">Phase</th>
                   <th className="px-3 py-2 text-right">Voltage</th>
                   <th className="px-3 py-2 text-right">Current</th>
-                  <th className="px-4 py-2 text-right">Load</th>
+                  <th className="px-3 py-2 text-right">Load</th>
+                  <th className="px-4 py-2 text-right">THD-I</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-navy-50 tabular-nums">
@@ -137,9 +140,10 @@ export default function SmdbDetailPage() {
                       <td className="px-4 py-2.5 font-semibold text-navy-900">L{i + 1}</td>
                       <td className={`px-3 py-2.5 text-right ${p.voltageV < low || p.voltageV > high ? 'font-semibold text-amber-700' : ''}`}>{p.voltageV.toFixed(1)} V</td>
                       <td className="px-3 py-2.5 text-right">{p.currentA.toFixed(1)} A</td>
-                      <td className={`px-4 py-2.5 text-right ${pct > t.critLoadPct ? 'font-semibold text-red-700' : pct > t.warnLoadPct ? 'font-semibold text-amber-700' : ''}`}>
+                      <td className={`px-3 py-2.5 text-right ${pct > t.critLoadPct ? 'font-semibold text-red-700' : pct > t.warnLoadPct ? 'font-semibold text-amber-700' : ''}`}>
                         {Math.round(pct)}%
                       </td>
+                      <td className={`px-4 py-2.5 text-right ${p.thdPct > 20 ? 'font-semibold text-amber-700' : ''}`}>{p.thdPct.toFixed(1)}%</td>
                     </tr>
                   )
                 })}
@@ -149,6 +153,7 @@ export default function SmdbDetailPage() {
               {[
                 ['Active power', `${formatNumber(reading.kW, 1)} kW`],
                 ['Apparent power', `${formatNumber(reading.kVA, 1)} kVA`],
+                ['Reactive power', `${formatNumber(reading.kVAr, 1)} kVAr`],
                 ['Power factor', reading.pf.toFixed(2)],
                 ['Frequency', `${reading.frequencyHz.toFixed(2)} Hz`],
                 ['Phase imbalance', `${health.imbalancePct.toFixed(1)}%`],
@@ -179,6 +184,7 @@ export default function SmdbDetailPage() {
                 ['Critical load', `> ${t.critLoadPct}%`],
                 ['Phase imbalance', `> ${t.imbalancePct}%`],
                 ['Voltage band', `${t.nominalVoltageV} V ± ${t.voltageTolPct}%`],
+                ['Minimum power factor', t.minPf.toFixed(2)],
                 ['Tripped', 'zero current on all phases'],
               ].map(([label, value]) => (
                 <div key={label} className="flex justify-between gap-3">
@@ -192,7 +198,23 @@ export default function SmdbDetailPage() {
           <Card title="Metering">
             <p className="flex items-start gap-2 text-sm text-navy-600">
               <Cpu className="mt-0.5 size-4 shrink-0" aria-hidden />
-              Selec energy meter {smdb.meterId} (RS-485 / Modbus) → ESP32-S3 IoT node → SIM7080G cellular → FacilityIQ cloud. Values shown here are simulated for the demo.
+              <span>
+                Selec energy meter <span className="font-semibold">{smdb.meterId}</span> (RS-485 / Modbus) → Kuroshio IoT node{' '}
+                {can(user, 'devices.view') ? (
+                  <Link to="/devices" className="font-semibold text-teal-700 hover:underline">
+                    {smdb.nodeId}
+                  </Link>
+                ) : (
+                  <span className="font-semibold">{smdb.nodeId}</span>
+                )}{' '}
+                (ESP32-S3 + SIM7080G cellular) → EnergyIQ cloud. Values shown here are simulated for the demo.
+              </span>
+            </p>
+            <p className="mt-3 flex items-start gap-2 text-sm text-navy-600">
+              <Receipt className="mt-0.5 size-4 shrink-0" aria-hidden />
+              <span>
+                Billed to cost centre <span className="font-semibold">{smdb.costCentre}</span>
+              </span>
             </p>
           </Card>
 

@@ -12,9 +12,9 @@ import { Card } from '../../components/ui/Card'
 import { PageHeader } from '../../components/ui/PageHeader'
 import { inputClass } from '../../components/ui/styles'
 import { useToast } from '../../components/ui/toastContext'
-import { getBuilding } from '../../data/buildings'
+import { getSite } from '../../data/sites'
 import { DEFAULT_THRESHOLDS, SMDBS } from '../../data/smdbs'
-import { filterByCampus } from '../../lib/campus'
+import { filterBySite } from '../../lib/scope'
 import { useSimulator } from '../../sim/simulatorContext'
 import { actions } from '../../store/actions'
 import { useAppDispatch, useAppState } from '../../store/hooks'
@@ -23,7 +23,7 @@ import { UsersSection } from './UsersSection'
 
 export default function SettingsPage() {
   const user = useCurrentUser()
-  const { campus } = useAppState()
+  const { site } = useAppState()
   const resetDemo = useResetDemo()
   const [params] = useSearchParams()
   const focusId = params.get('smdb')
@@ -40,11 +40,11 @@ export default function SettingsPage() {
                 <SlidersHorizontal className="size-5 text-teal-600" aria-hidden /> SMDB alarm thresholds
               </span>
             }
-            subtitle="Changes apply to the live status straight away. Defaults: warning > 80%, critical > 95% of breaker rating, imbalance > 15%, voltage ±10%."
+            subtitle="Changes apply to the live status straight away. Defaults: warning > 80%, critical > 95% of breaker rating, imbalance > 15%, voltage ±10%, power factor < 0.90. Boards follow the site selected in the top bar."
             flush
           >
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[900px] text-left text-sm">
+              <table className="w-full min-w-[980px] text-left text-sm">
                 <thead className="bg-navy-50/60 text-xs font-semibold tracking-wide text-navy-500 uppercase">
                   <tr>
                     <th className="px-5 py-3">Board</th>
@@ -53,11 +53,12 @@ export default function SettingsPage() {
                     <th className="px-3 py-3">Critical %</th>
                     <th className="px-3 py-3">Imbalance %</th>
                     <th className="px-3 py-3">Voltage ±%</th>
+                    <th className="px-3 py-3">Min PF</th>
                     <th className="px-5 py-3 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-navy-50">
-                  {filterByCampus(SMDBS, campus).map((smdb) => (
+                  {filterBySite(SMDBS, user, site).map((smdb) => (
                     <ThresholdRow key={smdb.id} smdb={smdb} focus={focusId === smdb.id} />
                   ))}
                 </tbody>
@@ -73,7 +74,7 @@ export default function SettingsPage() {
                 <FlaskConical className="size-5 text-amber-600" aria-hidden /> Simulate fault (demo helper)
               </span>
             }
-            subtitle="Trip or overload a board to show the live alert → acknowledge → work order flow."
+            subtitle="Trip, overload or drop the power factor on a board to show the live alert → acknowledge → work order flow. IoT comms loss can be simulated on the Device health page."
           >
             <FaultControls />
           </Card>
@@ -92,7 +93,7 @@ export default function SettingsPage() {
 
         {!canEdit && !can(user, 'smdb.simulateFault') && (
           <p className="text-sm text-navy-500">
-            Thresholds are managed by the FM Manager and the System Admin. <Link to="/smdb" className="text-teal-700 underline">Back to monitoring</Link>
+            Thresholds are managed by the FM Operations Manager, the Energy & MEP Engineer and the System Admin. <Link to="/smdb" className="text-teal-700 underline">Back to monitoring</Link>
           </p>
         )}
       </div>
@@ -100,16 +101,17 @@ export default function SettingsPage() {
   )
 }
 
-type Draft = Record<'warnLoadPct' | 'critLoadPct' | 'imbalancePct' | 'voltageTolPct', string>
-const FIELDS: Array<keyof Draft> = ['warnLoadPct', 'critLoadPct', 'imbalancePct', 'voltageTolPct']
+type Draft = Record<'warnLoadPct' | 'critLoadPct' | 'imbalancePct' | 'voltageTolPct' | 'minPf', string>
+const FIELDS: Array<keyof Draft> = ['warnLoadPct', 'critLoadPct', 'imbalancePct', 'voltageTolPct', 'minPf']
 
 function validate(d: Draft): string | null {
-  const [warn, crit, imb, tol] = FIELDS.map((f) => Number(d[f]))
-  if ([warn, crit, imb, tol].some((n) => !Number.isFinite(n))) return 'Enter numbers only.'
+  const [warn, crit, imb, tol, pf] = FIELDS.map((f) => Number(d[f]))
+  if ([warn, crit, imb, tol, pf].some((n) => !Number.isFinite(n))) return 'Enter numbers only.'
   if (warn < 30 || warn > 110) return 'Warning must be 30–110%.'
   if (crit <= warn || crit > 130) return 'Critical must be above warning (max 130%).'
   if (imb < 3 || imb > 50) return 'Imbalance must be 3–50%.'
   if (tol < 2 || tol > 20) return 'Voltage band must be 2–20%.'
+  if (pf < 0.7 || pf > 0.99) return 'Minimum power factor must be 0.70–0.99.'
   return null
 }
 
@@ -124,6 +126,7 @@ function ThresholdRow({ smdb, focus }: { smdb: Smdb; focus: boolean }) {
     critLoadPct: String(t.critLoadPct),
     imbalancePct: String(t.imbalancePct),
     voltageTolPct: String(t.voltageTolPct),
+    minPf: String(t.minPf),
   })
   const [editing, setEditing] = useState(focus)
   const [draft, setDraft] = useState<Draft>(() => toDraft(current))
@@ -147,6 +150,7 @@ function ThresholdRow({ smdb, focus }: { smdb: Smdb; focus: boolean }) {
         critLoadPct: Number(draft.critLoadPct),
         imbalancePct: Number(draft.imbalancePct),
         voltageTolPct: Number(draft.voltageTolPct),
+        minPf: Number(draft.minPf),
       }),
     )
     setEditing(false)
@@ -168,14 +172,14 @@ function ThresholdRow({ smdb, focus }: { smdb: Smdb; focus: boolean }) {
           {smdb.name}
         </Link>
         <p className="text-xs text-navy-400">
-          {getBuilding(smdb.buildingId)?.shortName} · {smdb.ratedCurrentA} A{!isDefault && ' · custom'}
+          {getSite(smdb.siteId)?.shortName} · {smdb.ratedCurrentA} A{!isDefault && ' · custom'}
         </p>
         {error && <p className="mt-1 text-xs font-medium text-red-700">{error}</p>}
       </td>
       <td className="px-3 py-3">
         <SmdbStatusBadge status={sim.health[smdb.id]?.status ?? 'normal'} />
         <p className="mt-0.5 text-xs text-navy-400 tabular-nums">
-          {Math.round(sim.health[smdb.id]?.loadPct ?? 0)}% load · {Math.round(sim.health[smdb.id]?.imbalancePct ?? 0)}% imb.
+          {Math.round(sim.health[smdb.id]?.loadPct ?? 0)}% load · PF {sim.readings[smdb.id]?.pf.toFixed(2)}
         </p>
       </td>
       {FIELDS.map((field) => (
@@ -188,6 +192,7 @@ function ThresholdRow({ smdb, focus }: { smdb: Smdb; focus: boolean }) {
               value={draft[field]}
               onChange={(e) => setDraft((d) => ({ ...d, [field]: e.target.value }))}
               onKeyDown={(e) => e.key === 'Enter' && save()}
+              step={field === 'minPf' ? 0.01 : 1}
               className={clsx(inputClass, 'w-20 py-1')}
             />
           ) : (

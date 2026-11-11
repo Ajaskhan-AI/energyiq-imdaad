@@ -1,7 +1,7 @@
 import { STATE_VERSION, type AppState } from './state'
 
 /** localStorage key. localStorage = small key/value storage in the browser that survives refreshes. */
-export const STORAGE_KEY = 'aau-fm-demo'
+export const STORAGE_KEY = 'kuroshio-energyiq-imdaad'
 
 /** Returns the saved state, or null if there is none / it is from an older version / it is broken. */
 export function loadState(): AppState | null {

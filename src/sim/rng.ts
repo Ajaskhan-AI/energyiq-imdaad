@@ -1,7 +1,7 @@
 /**
  * Seeded random numbers. Math.random() gives different numbers every load;
  * a seeded generator gives the SAME sequence for the same seed, so generated
- * demo data (energy history, tickets…) is stable and reproducible.
+ * demo data (energy history, signal strength…) is stable and reproducible.
  * Algorithm: mulberry32 (tiny, fast, good enough for demo data).
  */
 export interface Rng {

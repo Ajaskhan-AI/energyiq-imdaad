@@ -2,110 +2,102 @@ import type { Role, User } from '../types'
 
 /**
  * Every permission in the app. Components must check permissions with can(),
- * never compare role strings directly — so changing who can do what only
+ * never compare role strings directly, so changing who can do what only
  * ever means editing the matrix below.
  *
- * Naming: "<area>.<action>". "...Own" = only items assigned to the user.
+ * Naming: "<area>.<action>".
  */
 export const PERMISSIONS = [
-  // Overview (which KPI groups are visible)
   'overview.view',
-  'overview.kpi.alerts',
-  'overview.kpi.ppm',
-  'overview.kpi.tickets',
-  'overview.kpi.energy',
-  // Module 1 — SMDB monitoring
+  // SMDB live monitoring + alerts
   'smdb.view',
-  'smdb.viewAssigned',
   'smdb.ackAlerts',
   'smdb.createWorkOrder',
   'smdb.editThresholds',
   'smdb.simulateFault',
-  // Module 2 — Predictive maintenance
-  'predictive.view',
-  'predictive.act',
-  // Module 3 — Logbook & PPM
-  'ppm.view',
-  'ppm.viewOwn',
-  'ppm.complete',
-  'ppm.completeOwn',
-  'ppm.manage',
-  // Module 4 — Complaints & work orders
-  'tickets.view',
-  'tickets.viewOwn',
-  'tickets.create',
-  'tickets.assign',
-  'tickets.update',
-  'tickets.updateOwn',
-  // Module 5 — Energy analytics
+  // Power quality
+  'pq.view',
+  // Asset health (predictive maintenance)
+  'assets.view',
+  'assets.act',
+  // Energy analytics
   'energy.view',
   'energy.edit',
-  // Module 6 — Monthly report (+ which sections a role gets)
+  'energy.export',
+  // Billing & sub-metering
+  'billing.view',
+  'billing.export',
+  // IoT device health
+  'devices.view',
+  'devices.manage',
+  // Work orders
+  'workorders.view',
+  'workorders.update',
+  // Monthly report
   'report.view',
   'report.download',
-  'report.section.ppm',
-  'report.section.tickets',
-  'report.section.energy',
-  'report.section.alerts',
   // Admin / demo
   'users.view',
   'users.manage',
   'demo.reset',
-  // Technician "My Jobs"
-  'jobs.view',
 ] as const
 
 export type Permission = (typeof PERMISSIONS)[number]
 
-const ALL_KPIS: Permission[] = ['overview.view', 'overview.kpi.alerts', 'overview.kpi.ppm', 'overview.kpi.tickets', 'overview.kpi.energy']
-const ALL_REPORT_SECTIONS: Permission[] = ['report.section.ppm', 'report.section.tickets', 'report.section.energy', 'report.section.alerts']
-
-/** The permission matrix from CLAUDE.md, one row per role. */
+/** The permission matrix (see CLAUDE.md), one row per role. */
 const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
   fm_manager: [
-    ...ALL_KPIS,
-    'smdb.view', 'smdb.editThresholds',
-    'predictive.view',
-    'ppm.view', 'ppm.manage',
-    'tickets.view', 'tickets.create', 'tickets.assign',
-    'energy.view',
-    'report.view', 'report.download', ...ALL_REPORT_SECTIONS,
+    'overview.view',
+    'smdb.view', 'smdb.createWorkOrder', 'smdb.editThresholds',
+    'pq.view',
+    'assets.view',
+    'energy.view', 'energy.export',
+    'billing.view', 'billing.export',
+    'devices.view',
+    'workorders.view',
+    'report.view', 'report.download',
     'users.view',
   ],
-  fm_engineer: [
-    ...ALL_KPIS,
+  energy_engineer: [
+    'overview.view',
+    'smdb.view', 'smdb.ackAlerts', 'smdb.createWorkOrder', 'smdb.editThresholds',
+    'pq.view',
+    'assets.view', 'assets.act',
+    'energy.view', 'energy.edit', 'energy.export',
+    'billing.view', 'billing.export',
+    'devices.view',
+    'workorders.view', 'workorders.update',
+    'report.view', 'report.download',
+  ],
+  site_supervisor: [
+    'overview.view',
     'smdb.view', 'smdb.ackAlerts', 'smdb.createWorkOrder',
-    'predictive.view', 'predictive.act',
-    'ppm.view', 'ppm.complete', 'ppm.manage',
-    'tickets.view', 'tickets.create', 'tickets.assign', 'tickets.update',
+    'pq.view',
+    'assets.view', 'assets.act',
     'energy.view',
-    'report.view', 'report.download', ...ALL_REPORT_SECTIONS,
+    'devices.view',
+    'workorders.view', 'workorders.update',
+    'report.view', 'report.download',
   ],
-  technician: [
-    'jobs.view',
-    'smdb.viewAssigned',
-    'ppm.viewOwn', 'ppm.completeOwn',
-    'tickets.viewOwn', 'tickets.updateOwn',
-  ],
-  helpdesk: [
-    'overview.view', 'overview.kpi.tickets',
-    'tickets.view', 'tickets.create', 'tickets.assign',
-    'report.view', 'report.download', 'report.section.tickets',
-  ],
-  sustainability: [
-    'overview.view', 'overview.kpi.energy',
+  client_viewer: [
+    'overview.view',
     'smdb.view',
-    'energy.view', 'energy.edit',
-    'report.view', 'report.download', 'report.section.energy',
+    'assets.view',
+    'energy.view', 'energy.export',
+    'billing.view', 'billing.export',
+    'workorders.view',
+    'report.view', 'report.download',
   ],
   admin: [
-    ...ALL_KPIS,
+    'overview.view',
     'smdb.view', 'smdb.ackAlerts', 'smdb.createWorkOrder', 'smdb.editThresholds', 'smdb.simulateFault',
-    'predictive.view', 'predictive.act',
-    'ppm.view', 'ppm.manage',
-    'tickets.view', 'tickets.create',
-    'energy.view',
-    'report.view', ...ALL_REPORT_SECTIONS,
+    'pq.view',
+    'assets.view', 'assets.act',
+    'energy.view', 'energy.edit', 'energy.export',
+    'billing.view',
+    'devices.view', 'devices.manage',
+    'workorders.view',
+    'report.view',
     'users.view', 'users.manage',
     'demo.reset',
   ],
@@ -115,7 +107,7 @@ export function permissionsFor(role: Role): readonly Permission[] {
   return ROLE_PERMISSIONS[role]
 }
 
-/** The one place role checks happen. Usage: can(user, 'tickets.assign') */
+/** The one place role checks happen. Usage: can(user, 'workorders.update') */
 export function can(user: User | null | undefined, permission: Permission): boolean {
   return !!user && ROLE_PERMISSIONS[user.role].includes(permission)
 }
@@ -129,13 +121,14 @@ export function canAny(user: User | null | undefined, permissions: readonly Perm
 /** Which permissions open each page. Used by both the sidebar and the route guards. */
 export const PAGE_ACCESS = {
   overview: ['overview.view'],
-  smdb: ['smdb.view', 'smdb.viewAssigned'],
-  predictive: ['predictive.view'],
-  ppm: ['ppm.view', 'ppm.viewOwn'],
-  complaints: ['tickets.view'],
+  smdb: ['smdb.view'],
+  powerQuality: ['pq.view'],
+  assets: ['assets.view'],
   energy: ['energy.view'],
+  billing: ['billing.view'],
+  devices: ['devices.view'],
+  workOrders: ['workorders.view'],
   report: ['report.view'],
   howItWorks: [],
-  myJobs: ['jobs.view'],
   settings: ['smdb.editThresholds', 'smdb.simulateFault', 'users.view', 'users.manage', 'demo.reset'],
 } as const satisfies Record<string, readonly Permission[]>

@@ -5,7 +5,7 @@ import {
   Building,
   Cable,
   ChartColumn,
-  ClipboardCheck,
+  ClipboardList,
   Cloud,
   Cpu,
   Droplet,
@@ -14,9 +14,11 @@ import {
   Fuel,
   Globe,
   Mail,
-  MessageSquareWarning,
+  Radio,
   RadioTower,
+  Receipt,
   Snowflake,
+  Waves,
   Zap,
   type LucideIcon,
 } from 'lucide-react'
@@ -43,43 +45,45 @@ const CHAIN: Step[] = [
     icon: Cpu,
     title: 'ESP32-S3 IoT node',
     detail: 'Small gateway in the electrical room',
-    points: ['Reads the meters every few seconds', 'Also reads CT clamps on motors', 'Buffers data if the link drops'],
+    points: ['Reads up to 4 meters every minute', 'Also reads CT clamps on motors', 'Buffers data if the link drops, back-fills later'],
   },
   {
     icon: RadioTower,
     title: 'SIM7080G cellular',
     detail: 'LTE-M / NB-IoT modem',
-    points: ['Sends data over the cellular network', 'Kept separate from the campus IT network', 'No new cabling to a server room'],
+    points: ['Sends data over the cellular network', 'Kept separate from the building / client IT network', 'No new cabling to a server room'],
   },
   {
     icon: Cloud,
-    title: 'FacilityIQ cloud dashboard',
-    detail: 'What the FM team uses',
-    points: ['Live monitoring and alerts', 'Logbook, PPM and work orders', 'Analytics and monthly reports'],
+    title: 'EnergyIQ cloud platform',
+    detail: 'What Imdaad and its clients use',
+    points: ['Live monitoring and alerts', 'Energy analytics and waste detection', 'Billing, work orders and monthly client reports'],
   },
 ]
 
 const MODULES: Array<{ icon: LucideIcon; title: string; to: string; text: string }> = [
-  { icon: Zap, title: 'SMDB Live Monitoring', to: '/smdb', text: 'Live load, voltage and current per board, with alerts for overload, imbalance, voltage and trips.' },
-  { icon: Activity, title: 'Predictive Maintenance', to: '/predictive', text: 'CT clamps on chillers, AHUs and pumps reveal developing faults from the motor current signature.' },
-  { icon: ClipboardCheck, title: 'Digital Logbook & PPM', to: '/ppm', text: 'QR-tagged assets, digital checklists on a phone, PPM calendar and full maintenance history.' },
-  { icon: MessageSquareWarning, title: 'Complaints & Work Orders', to: '/complaints', text: 'Room QR code → complaint → assigned technician → closed, with response and resolution times.' },
-  { icon: ChartColumn, title: 'Energy Analytics', to: '/energy', text: 'Energy compared with the academic calendar to find use when buildings are empty.' },
-  { icon: FileText, title: 'Monthly Report', to: '/report', text: 'One-click PDF of PPM, complaints, energy and indicative Scope 2 CO₂ for management.' },
+  { icon: Zap, title: 'SMDB live monitoring', to: '/smdb', text: 'Live load, voltage, current and power factor per board across every client site, with alerts for overload, imbalance, voltage, low PF and trips.' },
+  { icon: ChartColumn, title: 'Energy analytics', to: '/energy', text: 'Every board compared with its site’s opening hours and the UAE calendar, so waste (e.g. HVAC on at weekends, lights on all night) is found automatically.' },
+  { icon: Waves, title: 'Power quality', to: '/power-quality', text: 'Power factor, phase balance, voltage and harmonics, with recommendations such as capacitor-bank sizing.' },
+  { icon: Activity, title: 'Asset health', to: '/assets', text: 'CT clamps on chillers, AHUs, pumps and cooling towers reveal developing faults from the motor current signature.' },
+  { icon: Receipt, title: 'Billing & sub-metering', to: '/billing', text: 'Estimated DEWA charges per site and metered recharge to each tenant or cost centre.' },
+  { icon: ClipboardList, title: 'Work orders', to: '/work-orders', text: 'Any alert or insight becomes a work order, ready to hand over to Imdaad’s CAFM system.' },
+  { icon: Radio, title: 'Device health', to: '/devices', text: 'Signal, data completeness and firmware for every Kuroshio IoT node, so no data gap goes unnoticed.' },
+  { icon: FileText, title: 'Monthly client report', to: '/report', text: 'One-click PDF per client or site: energy, cost, waste found, power quality, alerts and indicative Scope 2 CO₂.' },
 ]
 
 const ADD_ONS: Array<{ icon: LucideIcon; title: string; text: string }> = [
-  { icon: Snowflake, title: 'Lab & cold-storage alarms', text: 'Temperature sensors for fridges, freezers and lab rooms, with alerts before samples are at risk.' },
-  { icon: Droplet, title: 'Water & leak monitoring', text: 'Water meters and leak sensors in plant rooms, washrooms and under risers.' },
+  { icon: Snowflake, title: 'Cold-room & chiller temperature', text: 'Temperature sensors for cold stores, server rooms and chilled-water lines, with alerts before stock or equipment is at risk.' },
+  { icon: Droplet, title: 'Water & leak monitoring', text: 'Water meters and leak sensors in plant rooms, risers and car parks.' },
   { icon: Fuel, title: 'Generator monitoring', text: 'Run hours, fuel level, battery voltage and test-run records for standby generators.' },
   { icon: Flame, title: 'Panel hot-spot sensors', text: 'Wireless temperature sensors on busbars and terminals to catch loose connections early.' },
 ]
 
 const PILOT = [
-  ['Choose', 'Select one or two buildings and a few critical motors with the FM team.'],
-  ['Install', 'Fit meters on the chosen SMDBs and CT clamps on the motors; connect the IoT node.'],
-  ['Run', 'Use FacilityIQ alongside the current way of working: QR complaints, digital PPM, alerts.'],
-  ['Measure', 'Compare response times, PPM completion and energy use. Results are measured during the pilot.'],
+  ['Choose', 'Imdaad selects one or two client sites (e.g. an office tower and a mall) and their main SMDBs.'],
+  ['Install', 'Fit Selec meters (or read existing Modbus meters) and CT clamps on key motors; mount the IoT nodes. No shutdown for CT clamps.'],
+  ['Run', 'Use EnergyIQ alongside the current way of working: alerts, waste detection, monthly client reports.'],
+  ['Measure', 'Compare energy use, alerts caught early and work orders raised. Results are measured during the pilot.'],
 ] as const
 
 /** Sales/explanation page: the hardware chain, what each module does, add-ons and a pilot outline. */
@@ -88,7 +92,7 @@ export default function HowItWorksPage() {
     <>
       <PageHeader
         title="How it works"
-        description="From the electrical panel to the dashboard — the FacilityIQ platform behind this demo."
+        description="From the electrical panel to the dashboard: the Kuroshio EnergyIQ platform behind this demo, packaged for an FM provider managing many client sites."
       />
 
       <Card title="Data flow" subtitle="One IoT node per electrical room collects meter and motor data and sends it to the cloud">
@@ -130,13 +134,13 @@ export default function HowItWorksPage() {
           <Cable className="mt-0.5 size-5 shrink-0 text-teal-700" aria-hidden />
           <p className="text-sm text-navy-800">
             <strong>CT clamps for predictive maintenance:</strong> split-core current transformers clip around the motor supply cables of chillers,
-            AHUs and pumps — no rewiring and no shutdown needed. The same IoT node reads them and FacilityIQ analyses the current signature.
+            AHUs and pumps: no rewiring and no shutdown needed. The same IoT node reads them and EnergyIQ analyses the current signature.
           </p>
         </div>
       </Card>
 
-      <h2 className="mt-8 mb-3 text-lg font-semibold text-navy-900">What the FM team gets</h2>
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <h2 className="mt-8 mb-3 text-lg font-semibold text-navy-900">What Imdaad gets</h2>
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {MODULES.map(({ icon: Icon, title, to, text }) => (
           <Link key={title} to={to} className="group rounded-xl border border-navy-100 bg-white p-5 shadow-sm transition hover:border-teal-300 hover:shadow-md">
             <Icon className="size-6 text-teal-600" aria-hidden />
@@ -174,7 +178,7 @@ export default function HowItWorksPage() {
             ))}
           </ol>
           <p className="mt-4 text-sm text-navy-500">
-            All figures in this demo are sample data. Energy savings and other benefits are not promised — they are to be measured during the pilot.
+            All figures in this demo are sample data. Energy savings and other benefits are not promised: they are to be measured during the pilot.
           </p>
         </Card>
 

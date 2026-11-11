@@ -1,13 +1,14 @@
 import clsx from 'clsx'
 import { format } from 'date-fns'
-import { Activity, BellRing, Check, CheckCheck, ClipboardList, MessageSquare, Siren, Zap } from 'lucide-react'
+import { Activity, BellRing, Check, CheckCheck, ClipboardList, MessageSquare, Radio, Siren, Zap } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { useCurrentUser } from '../../auth/useCurrentUser'
-import { getBuilding } from '../../data/buildings'
+import { getAsset } from '../../data/assets'
+import { getBuilding } from '../../data/sites'
 import { getSmdb } from '../../data/smdbs'
 import { actorFromUser } from '../../lib/actor'
-import { workOrderFromAlert } from '../../lib/alerts'
+import { workOrderFromAlert } from '../../lib/workOrders'
 import { formatAgo } from '../../lib/format'
 import { alertPermissions } from '../../lib/smdb'
 import { actions } from '../../store/actions'
@@ -20,7 +21,7 @@ import { useToast } from '../ui/toastContext'
 
 /** One alert with its actions: acknowledge, add a note, create / open the work order. */
 export function AlertCard({ alert, compact = false }: { alert: Alert; compact?: boolean }) {
-  const { assets, counters } = useAppState()
+  const { counters } = useAppState()
   const user = useCurrentUser()
   const dispatch = useAppDispatch()
   const toast = useToast()
@@ -30,12 +31,13 @@ export function AlertCard({ alert, compact = false }: { alert: Alert; compact?: 
 
   const perms = alertPermissions(user, alert)
   const smdb = alert.smdbId ? getSmdb(alert.smdbId) : undefined
-  const asset = alert.assetId ? assets.find((a) => a.id === alert.assetId) : undefined
+  const asset = alert.assetId ? getAsset(alert.assetId) : undefined
   const building = getBuilding(alert.buildingId)
   const active = !alert.resolvedAt
   const critical = alert.severity === 'critical'
-  const Icon = alert.source === 'predictive' ? Activity : critical ? Siren : Zap
-  const equipmentLink = smdb ? `/smdb/${smdb.id}` : asset ? `/predictive/${asset.id}` : undefined
+  const Icon = alert.source === 'predictive' ? Activity : alert.source === 'device' ? Radio : critical ? Siren : Zap
+  const equipmentLink = smdb ? `/smdb/${smdb.id}` : asset ? `/assets/${asset.id}` : alert.nodeId ? '/devices' : undefined
+  const equipmentName = smdb?.name ?? asset?.name ?? (alert.nodeId ? `Node ${alert.nodeId}` : undefined)
 
   const acknowledge = () => {
     if (!user) return
@@ -50,11 +52,10 @@ export function AlertCard({ alert, compact = false }: { alert: Alert; compact?: 
   }
   const createWorkOrder = () => {
     if (!user) return
-    const id = `WO-${counters.ticket}`
-    dispatch(actions.createTicket(workOrderFromAlert(alert, assets, id, actorFromUser(user))))
-    dispatch(actions.linkAlertWorkOrder(alert.id, id))
+    const id = `WO-${counters.workOrder}`
+    dispatch(actions.createWorkOrder(workOrderFromAlert(alert, id, actorFromUser(user))))
     toast.show(`Work order ${id} created from ${alert.id}`)
-    navigate(`/complaints/${id}`)
+    navigate(`/work-orders/${id}`)
   }
 
   return (
@@ -83,7 +84,7 @@ export function AlertCard({ alert, compact = false }: { alert: Alert; compact?: 
           <p className="mt-0.5 text-sm text-navy-600">
             {equipmentLink ? (
               <Link to={equipmentLink} className="font-medium text-teal-700 hover:underline">
-                {smdb?.name ?? asset?.name}
+                {equipmentName}
               </Link>
             ) : null}
             {equipmentLink && ' · '}
@@ -130,7 +131,7 @@ export function AlertCard({ alert, compact = false }: { alert: Alert; compact?: 
               </Button>
             )}
             {alert.workOrderId ? (
-              <Link to={`/complaints/${alert.workOrderId}`} className="inline-flex items-center gap-1 text-sm font-semibold text-teal-700 hover:underline">
+              <Link to={`/work-orders/${alert.workOrderId}`} className="inline-flex items-center gap-1 text-sm font-semibold text-teal-700 hover:underline">
                 <ClipboardList className="size-4" aria-hidden />
                 Work order {alert.workOrderId}
               </Link>

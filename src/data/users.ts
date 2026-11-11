@@ -1,14 +1,14 @@
 import type { User } from '../types'
 
-/** Fictional demo logins (one card each on the demo login screen). */
+const IMDAAD = 'Imdaad · FM provider'
+
+/** Fictional demo logins (one card each on the demo login screen). Not real Imdaad staff. */
 export const SEED_USERS: User[] = [
-  { id: 'u-manager', name: 'Ahmed Al Mansoori', role: 'fm_manager', campus: 'ALL', initials: 'AM', jobTitle: 'FM Manager' },
-  { id: 'u-eng-ain', name: 'Rashid Khan', role: 'fm_engineer', campus: 'AIN', initials: 'RK', jobTitle: 'FM Engineer — Al Ain' },
-  { id: 'u-eng-auh', name: 'Priya Nair', role: 'fm_engineer', campus: 'AUH', initials: 'PN', jobTitle: 'FM Supervisor — Abu Dhabi' },
-  { id: 'u-tech-joseph', name: 'Joseph Mathew', role: 'technician', campus: 'AIN', initials: 'JM', jobTitle: 'HVAC Technician', technicianId: 't-joseph' },
-  { id: 'u-tech-imran', name: 'Imran Ali', role: 'technician', campus: 'AIN', initials: 'IA', jobTitle: 'Electrical Technician', technicianId: 't-imran' },
-  { id: 'u-tech-suresh', name: 'Suresh Kumar', role: 'technician', campus: 'AIN', initials: 'SK', jobTitle: 'Plumbing Technician', technicianId: 't-suresh' },
-  { id: 'u-helpdesk', name: 'Fatima Saeed', role: 'helpdesk', campus: 'ALL', initials: 'FS', jobTitle: 'FM Helpdesk Coordinator' },
-  { id: 'u-sustain', name: 'Dr. Layla Hassan', role: 'sustainability', campus: 'ALL', initials: 'LH', jobTitle: 'Sustainability Officer' },
-  { id: 'u-admin', name: 'Kuroshio Admin', role: 'admin', campus: 'ALL', initials: 'KA', jobTitle: 'System Admin (Kuroshio AI)' },
+  { id: 'u-manager', name: 'Khalid Al Suwaidi', role: 'fm_manager', siteIds: 'ALL', initials: 'KS', jobTitle: 'FM Operations Manager', organisation: IMDAAD },
+  { id: 'u-engineer', name: 'Anitha Menon', role: 'energy_engineer', siteIds: 'ALL', initials: 'AM', jobTitle: 'Energy & MEP Engineer', organisation: IMDAAD },
+  { id: 'u-sup-gulfstone', name: 'Omar Farouk', role: 'site_supervisor', siteIds: ['HBT', 'DLH'], initials: 'OF', jobTitle: 'Site Supervisor — Gulfstone sites', organisation: IMDAAD },
+  { id: 'u-sup-retail', name: 'Ravi Shankar', role: 'site_supervisor', siteIds: ['ANM', 'PMR'], initials: 'RS', jobTitle: 'Site Supervisor — Mall & Residences', organisation: IMDAAD },
+  { id: 'u-client-gulfstone', name: 'Sarah Thompson', role: 'client_viewer', siteIds: ['HBT', 'DLH'], clientId: 'CL-01', initials: 'ST', jobTitle: 'Asset Manager', organisation: 'Gulfstone Real Estate · client' },
+  { id: 'u-client-alnoor', name: 'Hamad Al Nuaimi', role: 'client_viewer', siteIds: ['ANM'], clientId: 'CL-03', initials: 'HN', jobTitle: 'Mall General Manager', organisation: 'Al Noor Retail Group · client' },
+  { id: 'u-admin', name: 'Kuroshio Admin', role: 'admin', siteIds: 'ALL', initials: 'KA', jobTitle: 'System Admin', organisation: 'Kuroshio AI' },
 ]

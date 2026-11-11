@@ -1,86 +1,71 @@
 import { subMinutes } from 'date-fns'
-import { getBuilding } from '../data/buildings'
-import { COOLING } from '../data/energy'
-import { OCCUPANCY, resolveDayType } from '../lib/calendar'
-import type { AcademicPeriod, Reading, Smdb, SmdbStatus, SmdbThresholds } from '../types'
+import type { CalendarPeriod, LoadType, Reading, Smdb, SmdbStatus, SmdbThresholds } from '../types'
+import { expectedKw } from './loadModel'
 import { createRng, hashString } from './rng'
 
 /**
  * Pure maths for the SMDB simulator (no React here, easy to test).
- *
- * Expected load = board peak kW × time-of-day shape × occupancy (academic
- * calendar) × cooling demand (month). HVAC boards get a bigger afternoon peak.
+ * Expected load comes from loadModel.ts; this file turns kW into a full
+ * meter reading (per-phase V / A / THD, PF, kVA, kVAr) and works out status.
  */
 
 const LINE_VOLTAGE = 400 // V, 3-phase line-to-line
 const SQRT3 = Math.sqrt(3)
 
-/** A couple of boards are "interesting" so the demo has something to show. */
-const STRESS: Record<string, number> = {
-  // Science labs HVAC board: ~73% of rating in the morning, ~84% in the afternoon cooling peak
-  // (→ a realistic "High load" warning between about 13:00 and 17:00 on teaching days).
-  'SMDB-AIN-B4-02': 1.52,
-}
 /** Per-phase current split. Default is nearly balanced; one board is close to the 15% limit. */
 const PHASE_SPLIT: Record<string, [number, number, number]> = {
-  'SMDB-AIN-B2-01': [1.07, 0.98, 0.95], // ~12% imbalance: lower the threshold to 10% to see an alert
+  'SMDB-PMR-B1-02': [1.07, 0.99, 0.94], // ~13% imbalance (single-phase apartment loads): lower the limit to 10% to see an alert
 }
 
-export function boardPeakKw(smdb: Smdb): number {
-  return (getBuilding(smdb.buildingId)?.baseLoadKw ?? 150) * smdb.loadShare
+/** Typical power factor and current THD by what the board feeds. */
+const PF_RANGE: Record<LoadType, [number, number]> = {
+  hvac: [0.91, 0.94], // VSD drives with capacitor banks
+  lighting_power: [0.92, 0.95],
+  tenant: [0.92, 0.96],
+  common: [0.91, 0.94],
+  carpark: [0.91, 0.93],
+  kitchen: [0.95, 0.98],
+  critical: [0.93, 0.96],
 }
-
-/** Hour-of-day shape (0.35 = night base load, ~1 = busy day). */
-function hourShape(hour: number, hvac: boolean): number {
-  if (hour < 6) return 0.35
-  if (hour < 8) return 0.35 + (hour - 5) * 0.2 // morning ramp
-  if (hour < 13) return 1
-  if (hour < 17) return hvac ? 1.15 : 1.05 // afternoon cooling peak
-  if (hour < 20) return 0.75
-  if (hour < 22) return 0.5
-  return 0.38
+const THD_RANGE: Record<LoadType, [number, number]> = {
+  hvac: [9, 14], // VSD drives
+  lighting_power: [12, 18], // LED drivers, IT loads
+  tenant: [8, 13],
+  common: [6, 10],
+  carpark: [7, 11],
+  kitchen: [3, 6],
+  critical: [14, 22], // UPS / imaging
 }
+/** A couple of boards with a power-quality story for the Power Quality page. */
+const PF_OVERRIDE: Record<string, number> = { 'SMDB-HBT-B2-01': 0.84 } // car park fans: capacitor bank out of service
+const THD_OVERRIDE: Record<string, number> = { 'SMDB-WMC-B1-02': 27 } // imaging / UPS: high harmonic distortion
 
-/** Expected kW for a board at a moment in time (before random noise). */
-export function expectedKw(smdb: Smdb, at: Date, calendar: AcademicPeriod[]): number {
-  const occupancy = OCCUPANCY[resolveDayType(at, calendar)]
-  const hour = at.getHours() + at.getMinutes() / 60
-  const shape = hourShape(hour, smdb.servesHvac)
-  // Empty buildings flatten towards the base load.
-  const activity = 0.35 + (shape - 0.35) * occupancy
-  const cooling = COOLING[at.getMonth()] / 1.45
-  const climate = smdb.servesHvac ? 0.55 + 0.45 * cooling : 0.8 + 0.2 * cooling
-  return boardPeakKw(smdb) * activity * climate * (STRESS[smdb.id] ?? 1)
-}
-
-/** Stable per-board numbers (phase split, PF, starting kWh counter). */
+/** Stable per-board numbers (phase split, PF, THD, starting kWh counter). */
 export function boardConstants(smdb: Smdb) {
   const rng = createRng(hashString(`board:${smdb.id}`))
   const split = PHASE_SPLIT[smdb.id] ?? [1 + rng.range(-0.02, 0.02), 1 + rng.range(-0.02, 0.02), 1 + rng.range(-0.02, 0.02)]
   const mean = (split[0] + split[1] + split[2]) / 3
+  const [pfLo, pfHi] = PF_RANGE[smdb.loadType]
+  const [thLo, thHi] = THD_RANGE[smdb.loadType]
   return {
     split: split.map((s) => s / mean) as [number, number, number],
-    pf: smdb.servesHvac ? rng.range(0.86, 0.9) : rng.range(0.91, 0.95),
-    startKwh: Math.round(800_000 + rng.range(0, 1_200_000)),
+    pf: PF_OVERRIDE[smdb.id] ?? rng.range(pfLo, pfHi),
+    thd: THD_OVERRIDE[smdb.id] ?? rng.range(thLo, thHi),
+    startKwh: Math.round(400_000 + rng.range(0, 2_400_000)),
   }
 }
 
-export type FaultType = 'trip' | 'overload'
+/** Demo faults the admin can force on a board. */
+export type FaultType = 'trip' | 'overload' | 'low_pf'
 
 /** Build one meter reading from a kW value (adds per-phase detail). */
-export function makeReading(
-  smdb: Smdb,
-  at: Date,
-  kW: number,
-  kWh: number,
-  random: () => number,
-  fault?: FaultType,
-): Reading {
-  const { split, pf: basePf } = boardConstants(smdb)
-  const pf = Math.min(0.99, basePf + (random() - 0.5) * 0.01)
+export function makeReading(smdb: Smdb, at: Date, kW: number, kWh: number, random: () => number, fault?: FaultType): Reading {
+  const { split, pf: basePf, thd } = boardConstants(smdb)
+  let pf = Math.min(0.99, basePf + (random() - 0.5) * 0.01)
+  if (fault === 'low_pf') pf = 0.78 + random() * 0.02
   let power = kW
   if (fault === 'overload') {
-    // Push the board to ~100-104% of its breaker rating.
+    // Push the board to ~100–104% of its breaker rating.
     power = (smdb.ratedCurrentA * (1 + random() * 0.04) * SQRT3 * LINE_VOLTAGE * pf) / 1000 / Math.max(...split)
   }
   if (fault === 'trip') power = 0
@@ -89,24 +74,29 @@ export function makeReading(
   // Voltage sags slightly with load.
   const loadRatio = avgCurrent / smdb.ratedCurrentA
   const phases = split.map((share) => ({
-    voltageV: round(230 * (1 - 0.015 * loadRatio) + (random() - 0.5) * 3, 1),
+    voltageV: round(231 * (1 - 0.015 * loadRatio) + (random() - 0.5) * 3, 1),
     currentA: round(avgCurrent * share * (1 + (random() - 0.5) * 0.01), 1),
+    thdPct: power > 0 ? round(thd * (1 + (random() - 0.5) * 0.08), 1) : 0,
   })) as Reading['phases']
+  const kVA = power / pf
 
   return {
     smdbId: smdb.id,
     at: at.toISOString(),
     phases,
     kW: round(power, 1),
-    kVA: round(power / pf, 1),
+    kVA: round(kVA, 1),
+    kVAr: round(Math.sqrt(Math.max(0, kVA * kVA - power * power)), 1),
     pf: round(pf, 2),
     kWh: Math.round(kWh),
     frequencyHz: round(50 + (random() - 0.5) * 0.06, 2),
   }
 }
 
+export type IssueCode = 'trip' | 'overload' | 'high_load' | 'imbalance' | 'voltage' | 'low_pf' | 'offline'
+
 export interface SmdbIssue {
-  code: 'trip' | 'overload' | 'high_load' | 'imbalance' | 'voltage'
+  code: IssueCode
   severity: 'warning' | 'critical'
   title: string
   message: string
@@ -118,11 +108,12 @@ export interface SmdbHealth {
   imbalancePct: number
   minV: number
   maxV: number
+  maxThd: number
   issues: SmdbIssue[]
 }
 
-/** Status from CLAUDE.md rules, using the board's (editable) thresholds. */
-export function computeHealth(reading: Reading, smdb: Smdb, t: SmdbThresholds): SmdbHealth {
+/** Status from the configurable thresholds. `offline` = its IoT node stopped sending data. */
+export function computeHealth(reading: Reading, smdb: Smdb, t: SmdbThresholds, offline = false): SmdbHealth {
   const currents = reading.phases.map((p) => p.currentA)
   const volts = reading.phases.map((p) => p.voltageV)
   const maxA = Math.max(...currents)
@@ -132,8 +123,18 @@ export function computeHealth(reading: Reading, smdb: Smdb, t: SmdbThresholds): 
   const imbalancePct = avgA > 1 ? ((maxA - Math.min(...currents)) / avgA) * 100 : 0
   const minV = Math.min(...volts)
   const maxV = Math.max(...volts)
-  const issues: SmdbIssue[] = []
+  const maxThd = Math.max(...reading.phases.map((p) => p.thdPct))
+  const base = { loadPct, imbalancePct, minV, maxV, maxThd }
 
+  if (offline) {
+    return {
+      ...base,
+      status: 'offline',
+      issues: [{ code: 'offline', severity: 'warning', title: 'No data — IoT node offline', message: `No readings from ${smdb.name} since its IoT node (${smdb.nodeId}) went offline. Values shown are the last received.` }],
+    }
+  }
+
+  const issues: SmdbIssue[] = []
   if (maxA < 1) {
     issues.push({ code: 'trip', severity: 'critical', title: 'SMDB tripped — zero current', message: `All phase currents dropped to zero on ${smdb.name}.` })
   } else {
@@ -144,6 +145,9 @@ export function computeHealth(reading: Reading, smdb: Smdb, t: SmdbThresholds): 
     }
     if (imbalancePct > t.imbalancePct) {
       issues.push({ code: 'imbalance', severity: 'warning', title: `Phase imbalance ${Math.round(imbalancePct)}%`, message: `Current imbalance between phases on ${smdb.name} is above the ${t.imbalancePct}% limit.` })
+    }
+    if (reading.pf < t.minPf) {
+      issues.push({ code: 'low_pf', severity: 'warning', title: `Low power factor — ${reading.pf.toFixed(2)}`, message: `Power factor on ${smdb.name} is below ${t.minPf.toFixed(2)}. Check the capacitor bank; low PF increases losses and may attract utility charges.` })
     }
   }
   const low = t.nominalVoltageV * (1 - t.voltageTolPct / 100)
@@ -160,7 +164,7 @@ export function computeHealth(reading: Reading, smdb: Smdb, t: SmdbThresholds): 
       : issues.length
         ? 'warning'
         : 'normal'
-  return { status, loadPct, imbalancePct, minV, maxV, issues }
+  return { ...base, status, issues }
 }
 
 export interface HistoryPoint {
@@ -170,7 +174,7 @@ export interface HistoryPoint {
 }
 
 /** Last 24 h at 15-minute steps, seeded so it is the same on every reload. */
-export function buildHistory(smdb: Smdb, now: Date, calendar: AcademicPeriod[]): HistoryPoint[] {
+export function buildHistory(smdb: Smdb, now: Date, calendar: CalendarPeriod[]): HistoryPoint[] {
   const { pf, split } = boardConstants(smdb)
   const points: HistoryPoint[] = []
   for (let i = 96; i >= 1; i--) {
@@ -185,9 +189,9 @@ export function buildHistory(smdb: Smdb, now: Date, calendar: AcademicPeriod[]):
 
 /**
  * Energy used by a board between two moments (kWh), integrating the load
- * model in 15-minute steps. Used for "today's kWh so far" on the Overview.
+ * model in 15-minute steps. Used for "today's kWh so far".
  */
-export function energyBetween(smdb: Smdb, from: Date, to: Date, calendar: AcademicPeriod[]): number {
+export function energyBetween(smdb: Smdb, from: Date, to: Date, calendar: CalendarPeriod[]): number {
   let kWh = 0
   for (let t = from.getTime(); t < to.getTime(); t += 900_000) {
     const stepHours = Math.min(900_000, to.getTime() - t) / 3_600_000

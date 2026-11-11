@@ -27,13 +27,13 @@ interface Degradation {
 }
 
 const DEGRADING: Record<string, Degradation> = {
-  'AAU-AIN-PMP-01': { kind: 'bearing', startDaysAgo: 40, ratePerDay: 0.0145 }, // → Alert
-  'AAU-AUH-AHU-01': { kind: 'filter', startDaysAgo: 30, ratePerDay: 0.011 }, // → Watch
-  'AAU-AIN-CH-02': { kind: 'condenser', startDaysAgo: 25, ratePerDay: 0.014 }, // → Watch
+  'HBT-CHWP-01': { kind: 'bearing', startDaysAgo: 40, ratePerDay: 0.0145 }, // → Alert
+  'WMC-AHU-01': { kind: 'filter', startDaysAgo: 30, ratePerDay: 0.011 }, // → Watch
+  'ANM-CH-02': { kind: 'condenser', startDaysAgo: 25, ratePerDay: 0.014 }, // → Watch
 }
 
-/** Typical running current per category (matches the PPM checklist ranges). */
-const NORMAL_CURRENT: Partial<Record<AssetCategory, number>> = { chiller: 350, ahu: 18, pump: 24 }
+/** Typical running current per category (A). */
+const NORMAL_CURRENT: Record<AssetCategory, number> = { chiller: 420, ahu: 22, pump: 48, cooling_tower: 34 }
 const BAND = 0.08 // normal band = ±8 % around the typical current
 
 export const ISSUES: Record<IssueKind, { title: string; detail: string; action: string; shortAction: string }> = {
@@ -46,7 +46,7 @@ export const ISSUES: Record<IssueKind, { title: string; detail: string; action: 
   filter: {
     title: 'Filter clogging — rising current',
     detail: 'Fan motor current has been rising steadily above its normal band as airflow resistance increases.',
-    action: 'Replace or clean the AHU filters and check belt tension.',
+    action: 'Replace or clean the AHU filters and check belt tension. For theatre AHUs, schedule outside surgery hours and re-validate air changes.',
     shortAction: 'Filter replacement',
   },
   condenser: {
@@ -115,7 +115,7 @@ function pointFor(asset: Asset, day: Date, now: Date, resetAt?: string): DayPoin
   const kind = DEGRADING[asset.id]?.kind
   const date = toISODate(day)
   const rng = createRng(hashString(`${asset.id}:${date}:mcsa`))
-  const normal = NORMAL_CURRENT[asset.category] ?? 20
+  const normal = NORMAL_CURRENT[asset.category]
   const rise = kind === 'filter' ? 0.25 : kind === 'condenser' ? 0.18 : 0.07
   return {
     t: day.getTime(),
@@ -132,7 +132,7 @@ export function assessAsset(asset: Asset, now: Date, resetAt?: string): Assessme
   for (let i = 59; i >= 0; i--) history.push(pointFor(asset, startOfDay(subDays(now, i)), now, resetAt))
   const today = history[history.length - 1]
   const status = healthStatus(today.health)
-  const normalA = NORMAL_CURRENT[asset.category] ?? 20
+  const normalA = NORMAL_CURRENT[asset.category]
   const d = DEGRADING[asset.id]
   const p = progressOn(asset, startOfDay(now), now, resetAt)
 
@@ -173,5 +173,5 @@ export function assessAsset(asset: Asset, now: Date, resetAt?: string): Assessme
 
 /** Assess every monitored asset. */
 export function assessAll(assets: Asset[], now: Date, resets: Record<string, { at: string }>): Assessment[] {
-  return assets.filter((a) => a.monitored).map((a) => assessAsset(a, now, resets[a.id]?.at))
+  return assets.map((a) => assessAsset(a, now, resets[a.id]?.at))
 }

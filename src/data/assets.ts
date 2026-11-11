@@ -1,65 +1,45 @@
-import type { Asset, AssetCategory, CampusId, Trade } from '../types'
+import type { Asset, AssetCategory } from '../types'
 
-/**
- * 25 fictional plant assets. "monitored" ones (12) have CT clamps and appear in
- * Predictive Maintenance. Fire pumps are intentionally excluded (CLAUDE.md).
- */
-type AssetRow = [
-  id: string,
-  name: string,
-  category: AssetCategory,
-  buildingId: string,
-  location: string,
-  description: string,
-  installYear: number,
-  trade: Trade,
-  monitored: boolean,
-  smdbId?: string,
-]
+/** Fictional plant assets with CT clamps on the motor supply (predictive maintenance). */
+type AssetRow = [id: string, name: string, category: AssetCategory, buildingId: string, location: string, description: string, installYear: number, smdbId?: string]
 
 const ROWS: AssetRow[] = [
-  // Al Ain Campus
-  ['AAU-AIN-CH-01', 'Chiller 1', 'chiller', 'AIN-B4', 'Central chiller plant', 'Water-cooled screw chiller, 450 TR', 2014, 'hvac', true],
-  ['AAU-AIN-CH-02', 'Chiller 2', 'chiller', 'AIN-B4', 'Central chiller plant', 'Water-cooled screw chiller, 450 TR', 2014, 'hvac', true],
-  ['AAU-AIN-AHU-01', 'AHU-01 Engineering', 'ahu', 'AIN-B2', 'Roof, east side', 'Air handling unit, 12,000 L/s', 2016, 'hvac', true],
-  ['AAU-AIN-AHU-02', 'AHU-02 Library', 'ahu', 'AIN-B3', 'Roof plant room', 'Air handling unit, 9,000 L/s', 2015, 'hvac', true],
-  ['AAU-AIN-AHU-03', 'AHU-03 Lecture Halls', 'ahu', 'AIN-B6', 'Roof, LH1–LH2 zone', 'Air handling unit, 14,000 L/s', 2017, 'hvac', true],
-  ['AAU-AIN-AHU-04', 'AHU-04 Student Centre', 'ahu', 'AIN-B5', 'Roof plant room', 'Air handling unit, 8,000 L/s', 2018, 'hvac', false],
-  ['AAU-AIN-AHU-05', 'AHU-05 Administration', 'ahu', 'AIN-B1', 'Roof plant room', 'Air handling unit, 6,500 L/s', 2013, 'hvac', false],
-  ['AAU-AIN-PMP-01', 'CHW Primary Pump 1', 'pump', 'AIN-B4', 'Central chiller plant', 'Chilled water primary pump, 37 kW', 2014, 'hvac', true],
-  ['AAU-AIN-PMP-02', 'CHW Secondary Pump 1', 'pump', 'AIN-B4', 'Central chiller plant', 'Chilled water secondary pump, 30 kW', 2014, 'hvac', true],
-  ['AAU-AIN-PMP-03', 'Domestic Water Booster Pump', 'pump', 'AIN-B5', 'Basement pump room', 'Booster set, 2 × 7.5 kW', 2019, 'plumbing', false],
-  ['AAU-AIN-PMP-04', 'Drainage Sump Pump', 'pump', 'AIN-B6', 'Basement sump', 'Submersible sump pump, 4 kW', 2017, 'plumbing', false],
-  ['AAU-AIN-GEN-01', 'Standby Generator 1', 'generator', 'AIN-B1', 'Generator yard', 'Diesel generator, 500 kVA', 2012, 'electrical', false],
-  ['AAU-AIN-GEN-02', 'Standby Generator 2', 'generator', 'AIN-B4', 'Generator yard', 'Diesel generator, 800 kVA', 2014, 'electrical', false],
-  ['AAU-AIN-SMDB-01', 'SMDB-01 Engineering', 'smdb', 'AIN-B2', 'Ground floor electrical room', 'Sub-main distribution board', 2016, 'electrical', false, 'SMDB-AIN-B2-01'],
-  ['AAU-AIN-SMDB-02', 'SMDB-01 Science Labs', 'smdb', 'AIN-B4', 'Ground floor electrical room', 'Sub-main distribution board', 2014, 'electrical', false, 'SMDB-AIN-B4-01'],
-  // Abu Dhabi Campus
-  ['AAU-AUH-CH-01', 'Chiller 1', 'chiller', 'AUH-B1', 'Roof chiller deck', 'Air-cooled screw chiller, 300 TR', 2017, 'hvac', true],
-  ['AAU-AUH-CH-02', 'Chiller 2', 'chiller', 'AUH-B1', 'Roof chiller deck', 'Air-cooled screw chiller, 300 TR', 2017, 'hvac', true],
-  ['AAU-AUH-AHU-01', 'AHU-01 Academic', 'ahu', 'AUH-B1', 'Level 5 plant room', 'Air handling unit, 13,000 L/s', 2017, 'hvac', true],
-  ['AAU-AUH-AHU-02', 'AHU-02 Library', 'ahu', 'AUH-B3', 'Roof plant room', 'Air handling unit, 7,500 L/s', 2018, 'hvac', true],
-  ['AAU-AUH-AHU-03', 'AHU-03 Sports Hall', 'ahu', 'AUH-B4', 'Roof plant room', 'Air handling unit, 11,000 L/s', 2019, 'hvac', false],
-  ['AAU-AUH-PMP-01', 'CHW Pump 1', 'pump', 'AUH-B1', 'Basement pump room', 'Chilled water pump, 22 kW', 2017, 'hvac', true],
-  ['AAU-AUH-PMP-02', 'Domestic Water Booster Pump', 'pump', 'AUH-B2', 'Basement pump room', 'Booster set, 2 × 5.5 kW', 2018, 'plumbing', false],
-  ['AAU-AUH-GEN-01', 'Standby Generator 1', 'generator', 'AUH-B1', 'Generator room', 'Diesel generator, 630 kVA', 2017, 'electrical', false],
-  ['AAU-AUH-SMDB-01', 'SMDB-01 Academic', 'smdb', 'AUH-B1', 'Ground floor electrical room', 'Sub-main distribution board', 2017, 'electrical', false, 'SMDB-AUH-B1-01'],
-  ['AAU-AUH-SMDB-02', 'SMDB-02 Student Services', 'smdb', 'AUH-B4', 'Roof plant room (HVAC)', 'Sub-main distribution board', 2019, 'electrical', false, 'SMDB-AUH-B4-02'],
+  ['HBT-CH-01', 'Chiller 1', 'chiller', 'HBT-B1', 'Roof chiller plant', 'Water-cooled centrifugal chiller, 600 TR', 2015, 'SMDB-HBT-B1-01'],
+  ['HBT-CH-02', 'Chiller 2', 'chiller', 'HBT-B1', 'Roof chiller plant', 'Water-cooled centrifugal chiller, 600 TR', 2015, 'SMDB-HBT-B1-01'],
+  ['HBT-CHWP-01', 'CHW Secondary Pump 1', 'pump', 'HBT-B1', 'Roof chiller plant', 'Chilled water secondary pump, 45 kW, VSD', 2015, 'SMDB-HBT-B1-01'],
+  ['HBT-AHU-01', 'AHU-01 Lobby & Podium', 'ahu', 'HBT-B2', 'Podium plant room', 'Air handling unit, 15,000 L/s', 2016, 'SMDB-HBT-B2-02'],
+  ['DLH-RR-01', 'Cold store refrigeration rack 1', 'chiller', 'DLH-B1', 'Cold store plant room', 'Ammonia refrigeration rack, 3 compressors', 2019, 'SMDB-DLH-B1-01'],
+  ['PMR-CHWP-01', 'Tower A CHW Pump 1', 'pump', 'PMR-B1', 'Level 41 plant room', 'Chilled water pump (district cooling ETS), 30 kW', 2018, 'SMDB-PMR-B1-01'],
+  ['PMR-CHWP-02', 'Tower B CHW Pump 1', 'pump', 'PMR-B2', 'Level 35 plant room', 'Chilled water pump (district cooling ETS), 30 kW', 2018, 'SMDB-PMR-B2-01'],
+  ['ANM-CH-01', 'Chiller 1', 'chiller', 'ANM-B1', 'Roof chiller plant', 'Air-cooled screw chiller, 450 TR', 2014, 'SMDB-ANM-B1-01'],
+  ['ANM-CH-02', 'Chiller 2', 'chiller', 'ANM-B1', 'Roof chiller plant', 'Air-cooled screw chiller, 450 TR', 2014, 'SMDB-ANM-B1-01'],
+  ['ANM-AHU-03', 'AHU-03 Food Court', 'ahu', 'ANM-B1', 'Level 2 plant room', 'Air handling unit, 18,000 L/s', 2014, 'SMDB-ANM-B1-01'],
+  ['ANM-CT-01', 'Cooling Tower Fan 1', 'cooling_tower', 'ANM-B1', 'Roof', 'Induced-draft cooling tower fan, 22 kW', 2014, 'SMDB-ANM-B1-01'],
+  ['WMC-AHU-01', 'AHU-01 Operating Theatres', 'ahu', 'WMC-B1', 'Roof plant room', 'Theatre AHU with HEPA filtration, 6,000 L/s', 2020, 'SMDB-WMC-B1-01'],
+  ['WMC-CHWP-01', 'CHW Pump 1', 'pump', 'WMC-B1', 'Basement pump room', 'Chilled water pump, 22 kW', 2020, 'SMDB-WMC-B1-01'],
 ]
 
-export function buildSeedAssets(createdAt: string): Asset[] {
-  return ROWS.map(([id, name, category, buildingId, location, description, installYear, trade, monitored, smdbId]) => ({
-    id,
-    name,
-    category,
-    campus: buildingId.slice(0, 3) as CampusId,
-    buildingId,
-    location,
-    description,
-    installYear,
-    trade,
-    monitored,
-    ...(smdbId ? { smdbId } : {}),
-    createdAt,
-  }))
+export const ASSETS: Asset[] = ROWS.map(([id, name, category, buildingId, location, description, installYear, smdbId]) => ({
+  id,
+  name,
+  category,
+  siteId: buildingId.slice(0, 3),
+  buildingId,
+  location,
+  description,
+  installYear,
+  ...(smdbId ? { smdbId } : {}),
+}))
+
+const BY_ID = new Map(ASSETS.map((a) => [a.id, a]))
+
+export function getAsset(id: string): Asset | undefined {
+  return BY_ID.get(id)
+}
+
+export const ASSET_CATEGORY_LABELS: Record<AssetCategory, string> = {
+  chiller: 'Chiller / refrigeration',
+  ahu: 'Air handling unit',
+  pump: 'Pump',
+  cooling_tower: 'Cooling tower',
 }

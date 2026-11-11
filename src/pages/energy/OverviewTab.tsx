@@ -1,149 +1,137 @@
-import { format, getDay } from 'date-fns'
-import { useState } from 'react'
-import { DailyEnergyChart, PeriodCompareChart, PeriodLegend, type DailyPoint } from '../../components/energy/EnergyCharts'
+import { BreakdownBars, DailyEnergyChart, PeriodLegend, type DailyPoint } from '../../components/energy/EnergyCharts'
 import { Card } from '../../components/ui/Card'
-import { inputClass } from '../../components/ui/styles'
-import { DAY_TYPE_LABELS } from '../../lib/calendar'
+import { getSite } from '../../data/sites'
+import { getSmdb, LOAD_TYPE_LABELS } from '../../data/smdbs'
+import { DAY_TYPE_COLORS, DAY_TYPE_LABELS } from '../../lib/calendar'
 import { fromISODate } from '../../lib/dates'
-import { PERIOD_COLORS } from '../../lib/energyAnalysis'
+import { dayTypeAverages } from '../../lib/energyAnalysis'
 import { formatNumber } from '../../lib/format'
 import { useAppState } from '../../store/hooks'
-import type { AcademicPeriod, DayType, EnergyRecord } from '../../types'
+import type { LoadType } from '../../types'
 import type { EnergyScope } from './scope'
 
-const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-
-export function OverviewTab({ scope, history }: { scope: EnergyScope; history: EnergyRecord[] }) {
+export function OverviewTab({ scope }: { scope: EnergyScope }) {
   const { calendar } = useAppState()
-  const { records, analysis } = scope
+  const { records, boardDays, analysis } = scope
+  const siteIds = new Set(scope.buildings.map((b) => b.siteId))
 
-  // ---- Daily totals for the chart ----
+  // ---- Daily totals vs expected ----
+  // Red dots: closed days (weekends, holidays, shutdowns) with flagged waste. After-hours waste is shown in the heatmap and waste tab.
+  const flaggedDates = new Set(scope.flags.filter((f) => f.kind === 'low_occupancy_day').map((f) => f.date))
   const byDate = new Map<string, DailyPoint>()
-  const flaggedDates = new Set(scope.flagsInScope.map((f) => f.date))
-  for (const r of records) {
-    const p = byDate.get(r.date) ?? {
-      t: fromISODate(r.date).getTime(),
-      date: r.date,
-      kWh: 0,
-      expected: 0,
-      flagged: flaggedDates.has(r.date),
-      dayType: analysis.dayTypes.get(r.date) ?? 'unscheduled',
-    }
+  for (const r of boardDays) {
+    const p = byDate.get(r.date) ?? { t: fromISODate(r.date).getTime(), date: r.date, kWh: 0, expected: 0, flagged: flaggedDates.has(r.date) }
     p.kWh += r.kWh
-    p.expected += Math.round(analysis.expected.get(`${r.buildingId}:${r.date}`) ?? 0)
+    p.expected += Math.round(analysis.expected.get(`${r.smdbId}:${r.date}`) ?? 0)
     byDate.set(r.date, p)
   }
   const points = [...byDate.values()].sort((a, b) => a.t - b.t)
+  const periods = calendar.filter((p) => !p.siteId || siteIds.has(p.siteId))
 
-  // ---- Average per day by period type ----
-  const agg = new Map<DayType, { days: number; kWh: number }>()
-  for (const p of points) {
-    const a = agg.get(p.dayType) ?? { days: 0, kWh: 0 }
-    agg.set(p.dayType, { days: a.days + 1, kWh: a.kWh + p.kWh })
+  // ---- By what the boards feed ----
+  const byLoad = new Map<LoadType, number>()
+  for (const r of boardDays) {
+    const type = getSmdb(r.smdbId)?.loadType
+    if (type) byLoad.set(type, (byLoad.get(type) ?? 0) + r.kWh)
   }
-  const byType = [...agg.entries()].map(([type, a]) => ({ type, days: a.days, avg: a.kWh / a.days })).sort((a, b) => b.avg - a.avg)
-  const teachingAvg = byType.find((t) => t.type === 'teaching')?.avg
-  const maxAvg = Math.max(1, ...byType.map((t) => t.avg))
+  const total = [...byLoad.values()].reduce((s, v) => s + v, 0) || 1
+  const loadRows = [...byLoad.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([type, kwh]) => ({ label: LOAD_TYPE_LABELS[type], value: kwh, sub: `${Math.round((kwh / total) * 100)}%` }))
+
+  // ---- Per building: intensity and after-hours share ----
+  const buildingRows = scope.buildings
+    .map((b) => {
+      const list = records.filter((r) => r.buildingId === b.id)
+      const kwh = list.reduce((s, r) => s + r.kWh, 0)
+      const after = list.reduce((s, r) => s + r.afterHoursKwh, 0)
+      const site = getSite(b.siteId)
+      return {
+        b,
+        site,
+        kwh,
+        eui: list.length ? (kwh / list.length) * 365 / b.areaM2 : 0,
+        afterPct: kwh ? Math.round((after / kwh) * 100) : 0,
+        peak: Math.max(0, ...list.map((r) => r.peakKw)),
+      }
+    })
+    .sort((a, b) => b.eui - a.eui)
+
+  // ---- Average per day by day type (per site) ----
+  const byType = dayTypeAverages(records, analysis.dayTypes)
+  const maxAvg = Math.max(1, ...byType.map((t) => t.avgKwhPerDay))
 
   return (
     <div className="space-y-6">
-      <Card
-        title="Daily electricity vs academic calendar"
-        subtitle="Coloured bands = academic periods · dashed line = expected use for that day type · red dots = flagged waste"
-      >
-        <DailyEnergyChart points={points} periods={calendar} />
+      <Card title="Daily electricity vs expected" subtitle="Expected = each board’s normal behaviour for its site’s opening hours, day type and season. Coloured bands = calendar periods.">
+        <DailyEnergyChart points={points} periods={periods} />
         <div className="mt-3">
           <PeriodLegend />
         </div>
       </Card>
 
       <div className="grid gap-6 xl:grid-cols-2">
-        <Card title="Average per day by period type" subtitle="Selected buildings and date range">
+        <Card title="Where the energy goes" subtitle="By what each SMDB feeds, for the selected buildings and dates">
+          <BreakdownBars rows={loadRows} />
+        </Card>
+
+        <Card title="Average per day by day type" subtitle="A closed day should use far less than a normal operating day">
           <ul className="space-y-3">
             {byType.map((t) => (
-              <li key={t.type} className="grid grid-cols-[8.5rem_1fr_6.5rem] items-center gap-3 text-sm">
+              <li key={t.dayType} className="grid grid-cols-[10rem_1fr_7rem] items-center gap-3 text-sm">
                 <span className="flex items-center gap-2 text-navy-800">
-                  <span className="size-3 rounded-sm" style={{ background: PERIOD_COLORS[t.type] === '#f1f5f9' ? '#94a3b8' : PERIOD_COLORS[t.type] }} />
-                  {DAY_TYPE_LABELS[t.type]} <span className="text-xs text-navy-400">({t.days}d)</span>
+                  <span className="size-3 rounded-sm" style={{ background: t.dayType === 'workday' ? '#5f80b8' : DAY_TYPE_COLORS[t.dayType] }} />
+                  {DAY_TYPE_LABELS[t.dayType]} <span className="text-xs text-navy-400">({t.days}d)</span>
                 </span>
                 <span className="h-2.5 rounded-full bg-navy-50">
-                  <span className="block h-2.5 rounded-full bg-navy-500" style={{ width: `${(t.avg / maxAvg) * 100}%` }} />
+                  <span className="block h-2.5 rounded-full bg-navy-500" style={{ width: `${(t.avgKwhPerDay / maxAvg) * 100}%` }} />
                 </span>
                 <span className="text-right tabular-nums">
-                  {formatNumber(t.avg)} kWh
-                  {teachingAvg && t.type !== 'teaching' && <span className="block text-xs text-navy-500">{Math.round((t.avg / teachingAvg) * 100)}% of teaching</span>}
+                  {formatNumber(t.avgKwhPerDay)} kWh
+                  {t.vsWorkdayPct !== null && <span className="block text-xs text-navy-500">{t.vsWorkdayPct}% of a normal day</span>}
                 </span>
               </li>
             ))}
           </ul>
+          {siteIds.size > 1 && <p className="mt-3 text-xs text-navy-500">Day types differ per site (weekends are normal days for the mall but closed days for the office tower), so each % compares the same sites.</p>}
         </Card>
-
-        <ComparePeriods scope={scope} calendar={calendar} history={history} />
       </div>
-    </div>
-  )
-}
 
-/** Pick two academic periods and compare their average weekday profile (uses all meter data). */
-function ComparePeriods({ scope, calendar, history }: { scope: EnergyScope; calendar: AcademicPeriod[]; history: EnergyRecord[] }) {
-  const ids = new Set(scope.buildings.map((b) => b.id))
-  const dates = history.map((r) => r.date)
-  const first = dates.reduce((m, d) => (d < m ? d : m), dates[0] ?? '')
-  const last = dates.reduce((m, d) => (d > m ? d : m), dates[0] ?? '')
-  const options = calendar.filter((p) => p.end >= first && p.start <= last)
-  const latest = (type: string) => [...options].reverse().find((p) => p.type === type)?.id
-  const [aId, setAId] = useState(() => latest('teaching') ?? options[0]?.id ?? '')
-  const [bId, setBId] = useState(() => latest('summer') ?? options[1]?.id ?? '')
-  const a = options.find((p) => p.id === aId)
-  const b = options.find((p) => p.id === bId)
-
-  /** Average kWh per day, overall and per weekday (Mon = 0), for the selected buildings. */
-  const profile = (period?: AcademicPeriod) => {
-    const perDay = new Map<string, number>()
-    if (period) {
-      for (const r of history) {
-        if (ids.has(r.buildingId) && r.date >= period.start && r.date <= period.end) perDay.set(r.date, (perDay.get(r.date) ?? 0) + r.kWh)
-      }
-    }
-    const sums = Array.from({ length: 7 }, () => ({ kWh: 0, days: 0 }))
-    let total = 0
-    for (const [date, kWh] of perDay) {
-      const wd = (getDay(fromISODate(date)) + 6) % 7
-      sums[wd].kWh += kWh
-      sums[wd].days++
-      total += kWh
-    }
-    return { perWeekday: sums.map((x) => (x.days ? x.kWh / x.days : 0)), avg: perDay.size ? total / perDay.size : 0 }
-  }
-  const pa = profile(a)
-  const pb = profile(b)
-  const data = WEEKDAYS.map((day, i) => ({ day, a: Math.round(pa.perWeekday[i]), b: Math.round(pb.perWeekday[i]) }))
-  const diff = pa.avg ? Math.round(((pb.avg - pa.avg) / pa.avg) * 100) : 0
-
-  return (
-    <Card title="Compare periods" subtitle="Average electricity per weekday — e.g. a teaching period vs summer break">
-      <div className="mb-3 grid gap-2 sm:grid-cols-2">
-        {[
-          [aId, setAId, 'Period A'] as const,
-          [bId, setBId, 'Period B'] as const,
-        ].map(([value, set, name]) => (
-          <label key={name} className="block">
-            <span className="mb-1 block text-xs font-medium text-navy-600">{name}</span>
-            <select value={value} onChange={(e) => set(e.target.value)} className={inputClass}>
-              {options.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name} ({format(fromISODate(p.start), 'd MMM')} – {format(fromISODate(p.end), 'd MMM yy')})
-                </option>
+      <Card flush title="Building benchmark" subtitle="Energy use intensity (EUI, kWh per m² per year, annualised from the selected dates) and share of energy used outside opening hours">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[760px] text-left text-sm">
+            <thead className="bg-navy-50/60 text-xs font-semibold tracking-wide text-navy-500 uppercase">
+              <tr>
+                <th className="px-5 py-3">Building</th>
+                <th className="px-3 py-3">Site type · hours</th>
+                <th className="px-3 py-3 text-right">Energy</th>
+                <th className="px-3 py-3 text-right">EUI</th>
+                <th className="px-3 py-3 text-right">After-hours share</th>
+                <th className="px-5 py-3 text-right">Peak demand</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-navy-50">
+              {buildingRows.map(({ b, site, kwh, eui, afterPct, peak }) => (
+                <tr key={b.id}>
+                  <td className="px-5 py-3">
+                    <span className="font-medium text-navy-900">{b.name}</span>
+                    <span className="block text-xs text-navy-500">
+                      {formatNumber(b.areaM2)} m² · {b.floors} floors
+                    </span>
+                  </td>
+                  <td className="px-3 py-3 text-navy-600">
+                    {site?.type} · {site && (site.openHour === 0 && site.closeHour === 24 ? '24/7' : `${site.openHour}:00–${site.closeHour}:00${site.openWeekends ? '' : ', Mon–Fri'}`)}
+                  </td>
+                  <td className="px-3 py-3 text-right tabular-nums">{formatNumber(kwh / 1000, 1)} MWh</td>
+                  <td className="px-3 py-3 text-right font-semibold tabular-nums">{formatNumber(eui)} kWh/m²</td>
+                  <td className={`px-3 py-3 text-right tabular-nums ${afterPct > 45 ? 'font-semibold text-amber-700' : ''}`}>{site?.openHour === 0 && site.closeHour === 24 ? '— (24/7)' : `${afterPct}%`}</td>
+                  <td className="px-5 py-3 text-right tabular-nums">{formatNumber(peak)} kW</td>
+                </tr>
               ))}
-            </select>
-          </label>
-        ))}
-      </div>
-      <PeriodCompareChart data={data} labelA={a?.name ?? '—'} labelB={b?.name ?? '—'} />
-      <p className="mt-2 text-sm text-navy-700">
-        Average per day: <strong>{formatNumber(pa.avg)} kWh</strong> vs <strong>{formatNumber(pb.avg)} kWh</strong>
-        {pa.avg > 0 && <> ({diff > 0 ? '+' : ''}{diff}%)</>}. Uses all available meter data (ignores the date-range filter).
-      </p>
-    </Card>
+            </tbody>
+          </table>
+        </div>
+      </Card>
+    </div>
   )
 }

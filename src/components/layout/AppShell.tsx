@@ -1,6 +1,5 @@
 import { Suspense, useState } from 'react'
 import { Outlet } from 'react-router'
-import { useCurrentUser } from '../../auth/useCurrentUser'
 import { actions } from '../../store/actions'
 import { useAppDispatch, useAppState } from '../../store/hooks'
 import { PageLoader } from '../ui/PageLoader'
@@ -9,12 +8,11 @@ import { TopBar } from './TopBar'
 import { useResetDemo } from './useResetDemo'
 
 /**
- * Desktop frame around every logged-in page (all roles except Technician):
- * sidebar + top bar + page content. <Outlet /> is where the current page renders.
+ * Frame around every logged-in page: sidebar + top bar + page content.
+ * <Outlet /> is where the current page renders.
  */
 export function AppShell() {
-  const { campus } = useAppState()
-  const user = useCurrentUser()
+  const { site } = useAppState()
   const dispatch = useAppDispatch()
   const resetDemo = useResetDemo()
   const [menuOpen, setMenuOpen] = useState(false)
@@ -24,13 +22,7 @@ export function AppShell() {
       <Sidebar mobileOpen={menuOpen} onClose={() => setMenuOpen(false)} />
 
       <div className="flex min-w-0 flex-1 flex-col overflow-y-auto print:overflow-visible">
-        <TopBar
-          campus={campus}
-          campusLocked={!!user && user.campus !== 'ALL'}
-          onCampusChange={(value) => dispatch(actions.setCampus(value))}
-          onOpenMenu={() => setMenuOpen(true)}
-          onReset={resetDemo}
-        />
+        <TopBar site={site} onSiteChange={(value) => dispatch(actions.setSite(value))} onOpenMenu={() => setMenuOpen(true)} onReset={resetDemo} />
         <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
           <Suspense fallback={<PageLoader />}>
             <Outlet />

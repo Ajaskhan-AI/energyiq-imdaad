@@ -56,7 +56,7 @@ export function drawCover(doc: jsPDF, title: string, lines: string[]): number {
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(10)
   doc.setTextColor(94, 234, 212) // teal-300
-  doc.text('KUROSHIO AI  -  FACILITYIQ', PAGE.margin, 14)
+  doc.text('KUROSHIO AI  -  ENERGYIQ  -  PREPARED FOR IMDAAD', PAGE.margin, 14)
   doc.setTextColor(255, 255, 255)
   doc.setFontSize(17)
   doc.text(safe(title), PAGE.margin, 24)
@@ -213,7 +213,7 @@ export function addHeadersAndFooters(doc: jsPDF, runningTitle: string): void {
     if (page > 1) {
       doc.setFontSize(8)
       doc.setTextColor(...COLORS.muted)
-      doc.text('Kuroshio AI - FacilityIQ', PAGE.margin, 12)
+      doc.text('Kuroshio AI - EnergyIQ', PAGE.margin, 12)
       doc.text(safe(runningTitle), PAGE.width - PAGE.margin, 12, { align: 'right' })
       doc.setDrawColor(...COLORS.grey)
       doc.setLineWidth(0.2)

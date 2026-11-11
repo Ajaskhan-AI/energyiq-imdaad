@@ -1,7 +1,7 @@
 import { FlaskConical } from 'lucide-react'
 import clsx from 'clsx'
 
-/** Required on every screen: makes clear none of the numbers are real AAU data. */
+/** Required on every screen: makes clear none of the numbers are real client data. */
 export function SampleBadge({ className }: { className?: string }) {
   return (
     <span
