@@ -2,24 +2,43 @@
 @import "tw-animate-css"; /* enter/exit animations used by shadcn/ui (dialogs, menus…) */
 
 /*
-  Design tokens. Tailwind v4 turns each --color-* variable into utility
-  classes automatically, e.g. --color-navy-900 → bg-navy-900, text-navy-900.
-  Teal and amber come from Tailwind's built-in palette.
+  Design tokens: the Kuroshio AI blue theme. Every colour in the app comes from here.
+  Tailwind v4 turns each --color-* variable into utility classes automatically,
+  e.g. --color-navy-900 → bg-navy-900, text-navy-900.
+
+  - navy-*  = deep blues for text, borders, backgrounds and the sidebar
+  - teal-*  = the Kuroshio logo blue (#014CC3 = teal-600) for buttons, links,
+              highlights and focus rings. (The name "teal" is kept so existing
+              classes keep working; the colour is the brand blue.)
+  - ok / warn / alert = status colours only (green / amber / red)
 */
 @theme {
   --font-sans: "Inter", "Segoe UI", ui-sans-serif, system-ui, sans-serif;
 
-  --color-navy-50: #f2f5fb;
-  --color-navy-100: #e3eaf5;
-  --color-navy-200: #c3d1e8;
-  --color-navy-300: #94acd4;
-  --color-navy-400: #5f80b8;
-  --color-navy-500: #3d5f9c;
-  --color-navy-600: #2a4a82;
-  --color-navy-700: #1f3a69;
-  --color-navy-800: #172d53;
-  --color-navy-900: #10213f;
-  --color-navy-950: #0a162b;
+  --color-navy-50: #f3f6fd;
+  --color-navy-100: #e3eaf8;
+  --color-navy-200: #c5d3ee;
+  --color-navy-300: #9bb1dd;
+  --color-navy-400: #6a87c4;
+  --color-navy-500: #4766a8;
+  --color-navy-600: #2f4f92;
+  --color-navy-700: #213e7a;
+  --color-navy-800: #172f62;
+  --color-navy-900: #0f224b;
+  --color-navy-950: #08163a;
+
+  /* Kuroshio logo blue scale (replaces Tailwind's built-in teal) */
+  --color-teal-50: #eef4ff;
+  --color-teal-100: #dce8fe;
+  --color-teal-200: #bfd5fd;
+  --color-teal-300: #92b8fb;
+  --color-teal-400: #5e93f6;
+  --color-teal-500: #2f70ec;
+  --color-teal-600: #014cc3;
+  --color-teal-700: #023fa3;
+  --color-teal-800: #063585;
+  --color-teal-900: #0a2d6b;
+  --color-teal-950: #071c45;
 
   /* Status colours: green = normal/ok, amber = warning/due, red = alert/overdue */
   --color-ok: #16a34a;
@@ -32,33 +51,32 @@
 
 /*
   shadcn/ui tokens. shadcn components use names like bg-primary, text-muted-foreground,
-  border-input. Here they are mapped to the EnergyIQ brand (navy + teal), so shadcn
-  components look like the rest of the app. Light theme only.
+  border-input. They are mapped to the same blue theme. Light theme only.
 */
 :root {
   --radius: 0.75rem;
   --background: #ffffff;
-  --foreground: #10213f; /* navy-900 */
+  --foreground: #0f224b; /* navy-900 */
   --card: #ffffff;
-  --card-foreground: #10213f;
+  --card-foreground: #0f224b;
   --popover: #ffffff;
-  --popover-foreground: #10213f;
-  --primary: #10213f; /* navy-900: main buttons */
+  --popover-foreground: #0f224b;
+  --primary: #014cc3; /* Kuroshio logo blue: main buttons */
   --primary-foreground: #ffffff;
-  --secondary: #f2f5fb; /* navy-50 */
-  --secondary-foreground: #172d53;
-  --muted: #f2f5fb;
-  --muted-foreground: #3d5f9c; /* navy-500 */
-  --accent: #e3eaf5; /* navy-100: hover backgrounds */
-  --accent-foreground: #10213f;
+  --secondary: #f3f6fd; /* navy-50 */
+  --secondary-foreground: #172f62;
+  --muted: #f3f6fd;
+  --muted-foreground: #4766a8; /* navy-500 */
+  --accent: #eef4ff; /* light brand blue: hover backgrounds */
+  --accent-foreground: #0f224b;
   --destructive: #dc2626;
-  --border: #e3eaf5; /* navy-100 */
-  --input: #c3d1e8; /* navy-200 */
-  --ring: #0d9488; /* teal-600: focus rings */
-  --chart-1: #2a4a82;
-  --chart-2: #0d9488;
+  --border: #e3eaf8; /* navy-100 */
+  --input: #c5d3ee; /* navy-200 */
+  --ring: #014cc3; /* logo blue: focus rings */
+  --chart-1: #014cc3;
+  --chart-2: #5e93f6;
   --chart-3: #f59e0b;
-  --chart-4: #94acd4;
+  --chart-4: #9bb1dd;
   --chart-5: #dc2626;
 }
 

@@ -19,7 +19,7 @@ import { HEALTH_TONE } from '../../lib/predictive'
 import { HEALTH_LABELS, type DayPoint, type HealthStatus, type SpectrumBin } from '../../sim/predictiveModel'
 import { Badge } from '../ui/Badge'
 
-const AXIS = { fontSize: 12, fill: '#5f80b8' }
+const AXIS = { fontSize: 12, fill: '#6a87c4' }
 
 export function HealthBadge({ status }: { status: HealthStatus }) {
   return <Badge tone={HEALTH_TONE[status]}>{HEALTH_LABELS[status]}</Badge>
@@ -62,14 +62,14 @@ export function HealthTrendChart({ points, resetAt }: { points: DayPoint[]; rese
           <ReferenceArea y1={80} y2={100} fill="#16a34a" fillOpacity={0.07} />
           <ReferenceArea y1={60} y2={80} fill="#d97706" fillOpacity={0.08} />
           <ReferenceArea y1={0} y2={60} fill="#dc2626" fillOpacity={0.06} />
-          <CartesianGrid stroke="#e3eaf5" vertical={false} />
+          <CartesianGrid stroke="#e3eaf8" vertical={false} />
           <XAxis dataKey="t" type="number" scale="time" domain={['dataMin', 'dataMax']} tickFormatter={(t: number) => format(t, 'd MMM')} tick={AXIS} />
           <YAxis domain={[0, 100]} ticks={[0, 20, 40, 60, 80, 100]} tick={AXIS} />
           <Tooltip labelFormatter={(t) => format(Number(t), 'd MMM yyyy')} formatter={(v) => [`${v} / 100`, 'Health']} />
           {resetAt && (
-            <ReferenceLine x={new Date(resetAt).setHours(0, 0, 0, 0)} stroke="#0d9488" strokeDasharray="4 4" label={{ value: 'Resolved', fill: '#0f766e', fontSize: 11, position: 'insideTopLeft' }} />
+            <ReferenceLine x={new Date(resetAt).setHours(0, 0, 0, 0)} stroke="#014cc3" strokeDasharray="4 4" label={{ value: 'Resolved', fill: '#023fa3', fontSize: 11, position: 'insideTopLeft' }} />
           )}
-          <Line type="monotone" dataKey="health" stroke="#10213f" strokeWidth={2} dot={false} isAnimationActive={false} />
+          <Line type="monotone" dataKey="health" stroke="#0f224b" strokeWidth={2} dot={false} isAnimationActive={false} />
         </LineChart>
       </ResponsiveContainer>
     </div>
@@ -85,12 +85,12 @@ export function CurrentBandChart({ points, band }: { points: DayPoint[]; band: [
     <div className="h-60 w-full">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={points} margin={{ top: 10, right: 12, bottom: 0, left: -10 }}>
-          <ReferenceArea y1={band[0]} y2={band[1]} fill="#0d9488" fillOpacity={0.12} label={{ value: 'Normal band', position: 'insideTopLeft', fill: '#0f766e', fontSize: 11 }} />
-          <CartesianGrid stroke="#e3eaf5" vertical={false} />
+          <ReferenceArea y1={band[0]} y2={band[1]} fill="#014cc3" fillOpacity={0.12} label={{ value: 'Normal band', position: 'insideTopLeft', fill: '#023fa3', fontSize: 11 }} />
+          <CartesianGrid stroke="#e3eaf8" vertical={false} />
           <XAxis dataKey="t" type="number" scale="time" domain={['dataMin', 'dataMax']} tickFormatter={(t: number) => format(t, 'd MMM')} tick={AXIS} />
           <YAxis domain={[min, max]} tickFormatter={(v: number) => `${v} A`} tick={AXIS} />
           <Tooltip labelFormatter={(t) => format(Number(t), 'd MMM yyyy')} formatter={(v) => [`${v} A`, 'Motor current']} />
-          <Line type="monotone" dataKey="currentA" stroke="#2a4a82" strokeWidth={2} dot={false} isAnimationActive={false} />
+          <Line type="monotone" dataKey="currentA" stroke="#2f4f92" strokeWidth={2} dot={false} isAnimationActive={false} />
         </LineChart>
       </ResponsiveContainer>
     </div>
@@ -103,15 +103,15 @@ export function SpectrumChart({ bins }: { bins: SpectrumBin[] }) {
     <div className="h-60 w-full">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={bins} margin={{ top: 10, right: 12, bottom: 0, left: -18 }} barGap={2}>
-          <CartesianGrid stroke="#e3eaf5" vertical={false} />
+          <CartesianGrid stroke="#e3eaf8" vertical={false} />
           <XAxis dataKey="label" tick={AXIS} interval={0} />
           <YAxis tickFormatter={(v: number) => `${v}%`} tick={AXIS} />
           <Tooltip formatter={(v, name) => [`${v}% of fundamental`, name === 'normal' ? 'Normal' : 'Now']} />
           <Legend formatter={(v) => (v === 'normal' ? 'Normal' : 'Now')} wrapperStyle={{ fontSize: 12 }} />
-          <Bar dataKey="normal" fill="#c3d1e8" radius={[3, 3, 0, 0]} isAnimationActive={false} />
+          <Bar dataKey="normal" fill="#c5d3ee" radius={[3, 3, 0, 0]} isAnimationActive={false} />
           <Bar dataKey="value" radius={[3, 3, 0, 0]} isAnimationActive={false}>
             {bins.map((b) => (
-              <Cell key={b.label} fill={b.fault ? '#dc2626' : '#2a4a82'} />
+              <Cell key={b.label} fill={b.fault ? '#dc2626' : '#2f4f92'} />
             ))}
           </Bar>
         </BarChart>

@@ -1,27 +1,23 @@
-import clsx from 'clsx'
 import type { ReactNode } from 'react'
+import { Badge as ShadcnBadge } from '@/components/shadcn/badge'
+import { cn } from '@/lib/utils'
 
-/** ok = green, warn = amber, alert = red (CLAUDE.md status colours). info/neutral for everything else. */
+/** ok = green, warn = amber, alert = red (status colours). info = brand blue, neutral = grey-blue. */
 export type Tone = 'ok' | 'warn' | 'alert' | 'info' | 'neutral'
 
 const TONES: Record<Tone, string> = {
-  ok: 'bg-ok-soft text-green-800 ring-green-600/20',
-  warn: 'bg-warn-soft text-amber-800 ring-amber-600/20',
-  alert: 'bg-alert-soft text-red-800 ring-red-600/20',
-  info: 'bg-sky-50 text-sky-800 ring-sky-600/20',
-  neutral: 'bg-navy-50 text-navy-700 ring-navy-500/15',
+  ok: 'border-green-200 bg-green-50 text-green-800',
+  warn: 'border-amber-200 bg-amber-50 text-amber-800',
+  alert: 'border-red-200 bg-red-50 text-red-700',
+  info: 'border-teal-200 bg-teal-50 text-teal-800',
+  neutral: 'border-navy-200 bg-navy-50 text-navy-700',
 }
 
+/** Status pill, built on the shadcn Badge. */
 export function Badge({ tone = 'neutral', children, className }: { tone?: Tone; children: ReactNode; className?: string }) {
   return (
-    <span
-      className={clsx(
-        'inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap ring-1 ring-inset',
-        TONES[tone],
-        className,
-      )}
-    >
+    <ShadcnBadge variant="outline" className={cn('gap-1 px-2.5 font-semibold [&>svg]:size-3', TONES[tone], className)}>
       {children}
-    </span>
+    </ShadcnBadge>
   )
 }

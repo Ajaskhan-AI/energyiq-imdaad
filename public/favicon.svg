@@ -1,6 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <!-- FacilityIQ mark: navy tile, teal building outline with a live-signal bolt -->
-  <rect width="32" height="32" rx="7" fill="#10213f"/>
-  <path d="M8 25V11l8-4 8 4v14" fill="none" stroke="#5eead4" stroke-width="2.2" stroke-linejoin="round"/>
-  <path d="M17.5 12.5 13 19h4l-1.5 5.5L20 18h-4l1.5-5.5z" fill="#f59e0b"/>
-</svg>

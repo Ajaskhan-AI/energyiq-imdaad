@@ -50,7 +50,7 @@ export const PERIOD_TYPE_LABELS: Record<PeriodType, string> = {
 
 /** Colours for calendar bands (charts) and badges. */
 export const DAY_TYPE_COLORS: Record<DayType, string> = {
-  workday: '#c3d1e8',
+  workday: '#c5d3ee',
   weekend: '#e2e8f0',
   holiday: '#fecaca',
   ramadan: '#fde68a',

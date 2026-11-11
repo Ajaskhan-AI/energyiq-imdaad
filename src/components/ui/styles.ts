@@ -1,36 +1,36 @@
-import clsx from 'clsx'
+import { buttonVariants } from '@/components/shadcn/button'
+import { cn } from '@/lib/utils'
 
 /**
- * Shared class strings. Kept in a .ts file (not a component file) so both
- * <button> and <Link> can look like buttons.
+ * Shared class strings, built on shadcn/ui. Kept in a .ts file (not a
+ * component file) so both <button> and <Link> can look like buttons.
+ *
+ * Variant names are the app's own; they map onto shadcn's button styles:
+ * primary / teal → brand blue, secondary → outline, danger → destructive.
  */
 export type ButtonVariant = 'primary' | 'secondary' | 'teal' | 'danger' | 'ghost'
 export type ButtonSize = 'sm' | 'md' | 'lg'
 
-const VARIANTS: Record<ButtonVariant, string> = {
-  primary: 'bg-navy-800 text-white hover:bg-navy-700',
-  secondary: 'border border-navy-200 bg-white text-navy-700 hover:bg-navy-50',
-  teal: 'bg-teal-600 text-white hover:bg-teal-700',
-  danger: 'bg-red-600 text-white hover:bg-red-700',
-  ghost: 'text-navy-600 hover:bg-navy-100',
-}
+const VARIANTS = {
+  primary: 'default',
+  teal: 'default',
+  secondary: 'outline',
+  danger: 'destructive',
+  ghost: 'ghost',
+} as const satisfies Record<ButtonVariant, string>
 
-const SIZES: Record<ButtonSize, string> = {
-  sm: 'px-3 py-1.5 text-sm',
-  md: 'px-4 py-2 text-sm',
-  lg: 'px-5 py-3 text-base',
-}
+const SIZES = { sm: 'sm', md: 'default', lg: 'lg' } as const satisfies Record<ButtonSize, string>
 
 export function buttonClass(variant: ButtonVariant = 'primary', size: ButtonSize = 'md', extra?: string) {
-  return clsx(
-    'inline-flex items-center justify-center gap-2 rounded-lg font-semibold transition-colors',
-    'disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-500',
-    VARIANTS[variant],
-    SIZES[size],
+  return cn(
+    buttonVariants({ variant: VARIANTS[variant], size: SIZES[size] }),
+    'font-semibold',
+    variant === 'secondary' && 'border-navy-200 text-navy-800 hover:border-teal-300 hover:bg-teal-50 hover:text-teal-800',
+    size === 'lg' && 'h-11 text-base',
     extra,
   )
 }
 
-/** Text inputs, selects and textareas. */
+/** Text inputs, native selects and textareas (shadcn input styling). */
 export const inputClass =
-  'block w-full rounded-lg border border-navy-200 bg-white px-3 py-2 text-navy-900 placeholder:text-navy-300 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 focus:outline-none'
+  'block w-full min-w-0 rounded-md border border-input bg-white px-3 py-2 text-sm text-navy-900 shadow-xs outline-none transition-[color,box-shadow] placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/40 disabled:cursor-not-allowed disabled:opacity-50'

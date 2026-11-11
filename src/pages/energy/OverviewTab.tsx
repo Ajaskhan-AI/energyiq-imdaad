@@ -80,7 +80,7 @@ export function OverviewTab({ scope }: { scope: EnergyScope }) {
             {byType.map((t) => (
               <li key={t.dayType} className="grid grid-cols-[10rem_1fr_7rem] items-center gap-3 text-sm">
                 <span className="flex items-center gap-2 text-navy-800">
-                  <span className="size-3 rounded-sm" style={{ background: t.dayType === 'workday' ? '#5f80b8' : DAY_TYPE_COLORS[t.dayType] }} />
+                  <span className="size-3 rounded-sm" style={{ background: t.dayType === 'workday' ? '#6a87c4' : DAY_TYPE_COLORS[t.dayType] }} />
                   {DAY_TYPE_LABELS[t.dayType]} <span className="text-xs text-navy-400">({t.days}d)</span>
                 </span>
                 <span className="h-2.5 rounded-full bg-navy-50">

@@ -2,6 +2,7 @@ import clsx from 'clsx'
 import { ArrowLeft, BellOff } from 'lucide-react'
 import { useState } from 'react'
 import { Link } from 'react-router'
+import { Tabs, TabsList, TabsTrigger } from '@/components/shadcn/tabs'
 import { can } from '../../auth/permissions'
 import { useCurrentUser } from '../../auth/useCurrentUser'
 import { AlertCard } from '../../components/alerts/AlertCard'
@@ -61,20 +62,15 @@ export default function AlertsPage() {
 
       <Card flush>
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-navy-100 px-5 py-4">
-          <div role="tablist" aria-label="Alert filter" className="flex flex-wrap gap-1">
-            {TABS.map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                role="tab"
-                aria-selected={tab === t.id}
-                onClick={() => setTab(t.id)}
-                className={clsx('rounded-lg px-3 py-1.5 text-sm font-medium', tab === t.id ? 'bg-navy-800 text-white' : 'text-navy-600 hover:bg-navy-50')}
-              >
-                {t.label} <span className="ml-1 opacity-70">{bySource.filter(t.match).length}</span>
-              </button>
-            ))}
-          </div>
+          <Tabs value={tab} onValueChange={(value) => setTab(value as Tab)}>
+            <TabsList aria-label="Alert filter" className="h-auto flex-wrap bg-navy-50 p-1">
+              {TABS.map((t) => (
+                <TabsTrigger key={t.id} value={t.id} className="h-8 flex-none px-3 data-[state=active]:text-teal-700">
+                  {t.label} <span className="ml-1 rounded-full bg-navy-100 px-1.5 text-xs tabular-nums">{bySource.filter(t.match).length}</span>
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
           <select aria-label="Source" value={source} onChange={(e) => setSource(e.target.value as typeof source)} className={clsx(inputClass, 'w-auto')}>
             <option value="all">All sources</option>
             <option value="smdb">SMDB monitoring</option>

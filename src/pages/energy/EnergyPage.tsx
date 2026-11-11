@@ -1,4 +1,4 @@
-import clsx from 'clsx'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/shadcn/tabs'
 import { format, subDays } from 'date-fns'
 import { CalendarRange, ChartColumn, Coins, Flag, Grid3x3, Leaf, Zap } from 'lucide-react'
 import { useMemo, useState } from 'react'
@@ -150,32 +150,34 @@ export default function EnergyPage() {
         <KpiCard label="Scope 2 CO₂" value={`${formatNumber(kwhToTonnesCo2(totalKwh), 0)} t`} sub="Indicative Dubai grid factor" icon={Leaf} tone="ok" />
       </div>
 
-      <div role="tablist" aria-label="Energy views" className="mt-6 flex flex-wrap gap-1">
-        {TABS.map(({ id, label, icon: Icon }) => (
-          <button
-            key={id}
-            type="button"
-            role="tab"
-            aria-selected={tab === id}
-            onClick={() => setParams({ tab: id }, { replace: true })}
-            className={clsx(
-              'inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium',
-              tab === id ? 'bg-navy-800 text-white' : 'bg-white text-navy-600 ring-1 ring-navy-100 hover:bg-navy-50',
-            )}
-          >
-            <Icon className="size-4" aria-hidden />
-            {label}
-            {id === 'waste' && open.length > 0 && <span className="rounded-full bg-amber-500 px-1.5 text-xs text-white">{open.length}</span>}
-          </button>
-        ))}
-      </div>
-
-      <div className="mt-4">
-        {tab === 'overview' && <OverviewTab scope={scope} />}
-        {tab === 'waste' && <WasteTab scope={scope} />}
-        {tab === 'heatmap' && <HeatmapTab scope={scope} />}
-        {tab === 'calendar' && <CalendarTab patternCount={groupPatterns(analysis.flags, 365).length} />}
-      </div>
+      {/* shadcn Tabs; the chosen tab is kept in the URL (?tab=…) so links can open a tab directly */}
+      <Tabs value={tab} onValueChange={(value) => setParams({ tab: value }, { replace: true })} className="mt-6">
+        <TabsList className="h-auto flex-wrap justify-start gap-1 bg-white p-1 shadow-xs ring-1 ring-navy-100">
+          {TABS.map(({ id, label, icon: Icon }) => (
+            <TabsTrigger
+              key={id}
+              value={id}
+              className="h-9 flex-none gap-1.5 px-3 text-navy-600 data-[state=active]:bg-teal-600 data-[state=active]:text-white data-[state=active]:shadow-sm"
+            >
+              <Icon aria-hidden />
+              {label}
+              {id === 'waste' && open.length > 0 && <span className="rounded-full bg-amber-500 px-1.5 text-xs text-white">{open.length}</span>}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+        <TabsContent value="overview" className="mt-3">
+          <OverviewTab scope={scope} />
+        </TabsContent>
+        <TabsContent value="waste" className="mt-3">
+          <WasteTab scope={scope} />
+        </TabsContent>
+        <TabsContent value="heatmap" className="mt-3">
+          <HeatmapTab scope={scope} />
+        </TabsContent>
+        <TabsContent value="calendar" className="mt-3">
+          <CalendarTab patternCount={groupPatterns(analysis.flags, 365).length} />
+        </TabsContent>
+      </Tabs>
     </>
   )
 }

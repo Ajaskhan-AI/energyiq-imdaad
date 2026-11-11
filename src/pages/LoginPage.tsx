@@ -65,7 +65,7 @@ export default function LoginPage() {
         </svg>
 
         <div className="relative flex flex-1 flex-col justify-between p-10 xl:p-14">
-          <BrandMark dark showPreparedFor={false} />
+          <BrandMark dark large showPreparedFor={false} />
 
           <div className="max-w-md">
             <p className="text-sm font-semibold tracking-widest text-teal-300 uppercase">Prepared for Imdaad</p>

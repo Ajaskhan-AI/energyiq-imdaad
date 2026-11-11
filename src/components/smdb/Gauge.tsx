@@ -26,12 +26,12 @@ export function Gauge({ label, value, display, unit, min, max, warnAt, critAt, l
   }
   const [ex, ey] = point(fraction)
   const bad = (critAt !== undefined && value > critAt) ? 'critical' : (warnAt !== undefined && value > warnAt) || (lowWarnAt !== undefined && value < lowWarnAt) ? 'warning' : 'ok'
-  const color = bad === 'critical' ? '#dc2626' : bad === 'warning' ? '#d97706' : '#0d9488'
+  const color = bad === 'critical' ? '#dc2626' : bad === 'warning' ? '#d97706' : '#014cc3'
 
   return (
     <div className="flex flex-col items-center">
       <svg viewBox="0 0 128 76" className="w-full max-w-44" role="img" aria-label={`${label}: ${display ?? value} ${unit ?? ''}`}>
-        <path d={`M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`} fill="none" stroke="#e3eaf5" strokeWidth="10" strokeLinecap="round" />
+        <path d={`M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`} fill="none" stroke="#e3eaf8" strokeWidth="10" strokeLinecap="round" />
         {fraction > 0 && (
           <path
             d={`M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${ex} ${ey}`}

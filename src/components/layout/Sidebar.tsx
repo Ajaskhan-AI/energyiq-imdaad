@@ -1,4 +1,4 @@
-import { PanelLeftClose, PanelLeftOpen, X, Zap } from 'lucide-react'
+import { PanelLeftClose, PanelLeftOpen, X } from 'lucide-react'
 import { NavLink } from 'react-router'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/shadcn/tooltip'
 import { cn } from '@/lib/utils'
@@ -7,6 +7,7 @@ import { useCurrentUser } from '../../auth/useCurrentUser'
 import { filterBySite } from '../../lib/scope'
 import { useSimulator } from '../../sim/simulatorContext'
 import { useAppState } from '../../store/hooks'
+import { KuroshioLogo } from './BrandMark'
 import { NAV_GROUPS, NAV_ITEMS, type NavItem } from './navItems'
 
 interface Props {
@@ -58,9 +59,7 @@ export function Sidebar({ mobileOpen, onClose, collapsed, onToggleCollapsed }: P
       >
         {/* Brand */}
         <div className={cn('flex h-16 items-center gap-3 border-b border-white/10 px-4', mini && 'lg:justify-center lg:px-0')}>
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-teal-500 text-navy-950">
-            <Zap className="size-5" aria-hidden />
-          </span>
+          <KuroshioLogo white className="h-8" />
           <div className={cn('min-w-0 flex-1', mini && 'lg:hidden')}>
             <p className="truncate text-sm font-bold text-white">
               EnergyIQ <span className="font-medium text-navy-300">by Kuroshio AI</span>

@@ -13,16 +13,16 @@ const FOOTER_SPACE = 18
 
 type RGB = [number, number, number]
 export const COLORS: Record<'navy' | 'navyLight' | 'teal' | 'amber' | 'red' | 'green' | 'grey' | 'text' | 'muted' | 'panel', RGB> = {
-  navy: [16, 33, 63],
-  navyLight: [42, 74, 130],
-  teal: [13, 148, 136],
+  navy: [15, 34, 75],
+  navyLight: [47, 79, 146],
+  teal: [1, 76, 195],
   amber: [217, 119, 6],
   red: [220, 38, 38],
   green: [22, 163, 74],
   grey: [148, 163, 184],
-  text: [16, 33, 63],
-  muted: [95, 112, 140],
-  panel: [242, 245, 251],
+  text: [15, 34, 75],
+  muted: [71, 102, 168],
+  panel: [243, 246, 253],
 }
 
 /**
@@ -48,21 +48,47 @@ export function createDoc(): jsPDF {
   return doc
 }
 
-/** Big navy band on page 1. Returns the y position below it. */
+/**
+ * White Kuroshio logo for the cover band, loaded as soon as the PDF code loads
+ * (jsPDF needs the image as data). If it isn't ready yet, the cover is drawn
+ * without it.
+ */
+let logoDataUrl: string | null = null
+const LOGO_RATIO = 203 / 320 // height / width of public/kuroshio-logo-white.png
+void fetch(`${import.meta.env.BASE_URL}kuroshio-logo-white.png`)
+  .then((res) => res.blob())
+  .then(
+    (blob) =>
+      new Promise<void>((resolve) => {
+        const reader = new FileReader()
+        reader.onload = () => {
+          logoDataUrl = typeof reader.result === 'string' ? reader.result : null
+          resolve()
+        }
+        reader.readAsDataURL(blob)
+      }),
+  )
+  .catch(() => undefined)
+
+/** Big brand-blue band on page 1. Returns the y position below it. */
 export function drawCover(doc: jsPDF, title: string, lines: string[]): number {
   const height = 34 + lines.length * 5
   doc.setFillColor(...COLORS.navy)
   doc.rect(0, 0, PAGE.width, height, 'F')
+  if (logoDataUrl) {
+    const w = 20
+    doc.addImage(logoDataUrl, 'PNG', PAGE.width - PAGE.margin - w, height - w * LOGO_RATIO - 5, w, w * LOGO_RATIO)
+  }
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(10)
-  doc.setTextColor(94, 234, 212) // teal-300
+  doc.setTextColor(146, 184, 251) // light brand blue
   doc.text('KUROSHIO AI  -  ENERGYIQ  -  PREPARED FOR IMDAAD', PAGE.margin, 14)
   doc.setTextColor(255, 255, 255)
   doc.setFontSize(17)
   doc.text(safe(title), PAGE.margin, 24)
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(10)
-  doc.setTextColor(195, 209, 232)
+  doc.setTextColor(197, 211, 238)
   lines.forEach((line, i) => doc.text(safe(line), PAGE.margin, 32 + i * 5))
 
   // "Sample data" tag, top right

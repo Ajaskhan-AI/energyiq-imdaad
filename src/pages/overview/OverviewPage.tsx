@@ -28,7 +28,7 @@ import { usePredictive } from '../../sim/usePredictive'
 import { actions } from '../../store/actions'
 import { useAppDispatch, useAppState } from '../../store/hooks'
 
-const AXIS = { fontSize: 11, fill: '#5f80b8' }
+const AXIS = { fontSize: 11, fill: '#6a87c4' }
 
 /**
  * Portfolio overview: every number is calculated live from the store, the
@@ -145,15 +145,15 @@ export default function OverviewPage() {
               <AreaChart data={liveSeries} margin={{ top: 6, right: 8, bottom: 0, left: 0 }}>
                 <defs>
                   <linearGradient id="ovLoad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#0d9488" stopOpacity={0.35} />
-                    <stop offset="100%" stopColor="#0d9488" stopOpacity={0.03} />
+                    <stop offset="0%" stopColor="#014cc3" stopOpacity={0.35} />
+                    <stop offset="100%" stopColor="#014cc3" stopOpacity={0.03} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid stroke="#e3eaf5" vertical={false} />
+                <CartesianGrid stroke="#e3eaf8" vertical={false} />
                 <XAxis dataKey="t" type="number" scale="time" domain={['dataMin', 'dataMax']} tickFormatter={(t: number) => format(t, 'HH:mm')} tick={AXIS} />
                 <YAxis tickFormatter={(v: number) => `${formatNumber(v)}`} tick={AXIS} width={48} />
                 <Tooltip labelFormatter={(t) => format(Number(t), 'EEE HH:mm')} formatter={(v) => [`${formatNumber(Number(v))} kW`, 'Load']} />
-                <Area type="monotone" dataKey="kW" stroke="#0d9488" strokeWidth={2} fill="url(#ovLoad)" isAnimationActive={false} />
+                <Area type="monotone" dataKey="kW" stroke="#014cc3" strokeWidth={2} fill="url(#ovLoad)" isAnimationActive={false} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -221,13 +221,13 @@ export default function OverviewPage() {
           <div className="h-52">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={last14} margin={{ top: 6, right: 8, bottom: 0, left: 0 }}>
-                <CartesianGrid stroke="#e3eaf5" vertical={false} />
+                <CartesianGrid stroke="#e3eaf8" vertical={false} />
                 <XAxis dataKey="label" tick={AXIS} interval={0} />
                 <YAxis tickFormatter={(v: number) => `${Math.round(v / 1000)}k`} tick={AXIS} width={40} />
                 <Tooltip formatter={(v) => [`${formatNumber(Number(v))} kWh`, 'Electricity']} labelFormatter={(_l, p) => (p?.[0]?.payload ? format(fromISODate((p[0].payload as (typeof last14)[number]).date), 'EEE d MMM') : '')} />
                 <Bar dataKey="kWh" radius={[3, 3, 0, 0]} isAnimationActive={false}>
                   {last14.map((d) => (
-                    <Cell key={d.date} fill={d.closed ? '#f59e0b' : '#2a4a82'} />
+                    <Cell key={d.date} fill={d.closed ? '#f59e0b' : '#2f4f92'} />
                   ))}
                 </Bar>
               </BarChart>

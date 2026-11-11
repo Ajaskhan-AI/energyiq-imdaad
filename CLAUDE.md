@@ -67,13 +67,16 @@ All names are fictional.
 - Editable state (users, alerts, work orders, thresholds, calendar, reviewed waste patterns, asset resets) is in a React Context + reducer, persisted to localStorage (`src/store/`). Bump `STATE_VERSION` when its shape changes.
 
 ## Tech stack
-- React + TypeScript (strict) + Vite, Tailwind CSS v4, Recharts, React Router (HashRouter), lucide-react.
+- React + TypeScript (strict) + Vite, Tailwind CSS v4, shadcn/ui (Radix), Recharts, React Router (HashRouter), lucide-react. `@/` = `src/`.
 - `jspdf` + `jspdf-autotable` for PDFs (loaded on demand).
 - Shared types in `src/types/`. No `any`.
 - Static site: deploys to Vercel / Netlify / GitHub Pages.
 
 ## Design
-- Clean, professional, technical. Light theme. Navy + teal + amber; no purple gradients.
+- Clean, professional, technical. Light theme. **Kuroshio blue theme** taken from the logo (#014CC3); no purple gradients.
+- All colours are defined once in `src/index.css`: `navy-*` = deep blues (text, borders, sidebar), `teal-*` = the logo blue scale (buttons, links, highlights; the name is kept for compatibility). Change the theme there, not in components.
+- UI built on **shadcn/ui** (components in `src/components/shadcn/`, added with `npx shadcn@latest add …`); the app's own wrappers in `src/components/ui/` (Card, Button, Badge, Modal, KpiCard, toasts) sit on top of them.
+- Logo files: `public/kuroshio-logo.png` and `public/kuroshio-logo-white.png` (for dark backgrounds); used in the sidebar, login page, favicon and PDF cover.
 - Status colours: green = normal/ok, amber = warning/watch, red = alert/tripped/critical, grey = no data.
 - Readable on a projector (large KPI numbers, clear labels).
 
