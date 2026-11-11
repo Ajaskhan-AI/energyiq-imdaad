@@ -1,6 +1,4 @@
-import clsx from 'clsx'
-import { ArrowRight, Briefcase, Building2, ChartColumn, Check, HardHat, KeyRound, Lock, MapPin, Radio, ShieldCheck, User as UserIcon, Zap, type LucideIcon } from 'lucide-react'
-import { useState, type FormEvent } from 'react'
+import { ArrowRight, Briefcase, Building2, ChartColumn, HardHat, MapPin, Radio, ShieldCheck, Zap, type LucideIcon } from 'lucide-react'
 import { useNavigate } from 'react-router'
 import { ROLE_HOME, ROLE_LABELS, ROLE_ORDER } from '../auth/roles'
 import { BrandMark } from '../components/layout/BrandMark'
@@ -15,24 +13,18 @@ import { actions } from '../store/actions'
 import { useAppDispatch, useAppState } from '../store/hooks'
 import type { Role } from '../types'
 
-/** What each role is for, shown on the role picker. */
+/** What each role is for, shown on its login card. */
 const ROLE_INFO: Record<Role, { icon: LucideIcon; blurb: string }> = {
   fm_manager: { icon: Briefcase, blurb: 'Portfolio KPIs across every client site' },
   energy_engineer: { icon: ChartColumn, blurb: 'Analytics, waste detection, power quality' },
-  site_supervisor: { icon: HardHat, blurb: 'Live boards and alerts for your sites' },
-  client_viewer: { icon: Building2, blurb: 'Your buildings, costs and monthly reports' },
+  site_supervisor: { icon: HardHat, blurb: 'Live boards and alerts for their sites' },
+  client_viewer: { icon: Building2, blurb: 'Their buildings, costs and monthly reports' },
   admin: { icon: ShieldCheck, blurb: 'IoT devices, users and demo tools' },
 }
 
-/** "Khalid Al Suwaidi" → "khalid.alsuwaidi" (demo username, not a real account). */
-function username(name: string): string {
-  const words = name.toLowerCase().replace(/[^a-z\s]/g, '').trim().split(/\s+/)
-  return words.length > 1 ? `${words[0]}.${words.slice(1).join('')}` : words[0]
-}
-
 /**
- * Demo login: pick a role, then the user for that role, and sign in.
- * There is no real authentication; no password is checked.
+ * Demo login: one card per role, with a login button for each demo user in
+ * that role. There is no real authentication.
  */
 export default function LoginPage() {
   const { users } = useAppState()
@@ -41,23 +33,14 @@ export default function LoginPage() {
   const navigate = useNavigate()
 
   const roles = ROLE_ORDER.filter((r) => users.some((u) => u.role === r))
-  const [role, setRole] = useState<Role>(roles[0] ?? 'fm_manager')
-  const roleUsers = users.filter((u) => u.role === role)
-  const [userId, setUserId] = useState<string | null>(null)
-  const selected = roleUsers.find((u) => u.id === userId) ?? roleUsers[0]
-
   const liveKw = SMDBS.reduce((s, b) => s + (sim.health[b.id]?.status === 'offline' ? 0 : (sim.readings[b.id]?.kW ?? 0)), 0)
   const nodesOnline = sim.nodes.filter((n) => n.status !== 'offline').length
 
-  const pickRole = (r: Role) => {
-    setRole(r)
-    setUserId(null)
-  }
-  const signIn = (event: FormEvent) => {
-    event.preventDefault()
-    if (!selected) return
-    dispatch(actions.login(selected.id))
-    navigate(ROLE_HOME[selected.role])
+  const signIn = (userId: string) => {
+    const user = users.find((u) => u.id === userId)
+    if (!user) return
+    dispatch(actions.login(user.id))
+    navigate(ROLE_HOME[user.role])
   }
 
   return (
@@ -115,7 +98,7 @@ export default function LoginPage() {
         </div>
       </aside>
 
-      {/* ---------- Sign-in panel ---------- */}
+      {/* ---------- Role logins ---------- */}
       <main className="flex flex-col bg-navy-50/40">
         <div className="flex items-center justify-between gap-3 px-6 pt-6 sm:px-10">
           <div className="lg:hidden">
@@ -125,123 +108,51 @@ export default function LoginPage() {
         </div>
 
         <div className="flex flex-1 items-center justify-center px-6 py-10 sm:px-10">
-          <form onSubmit={signIn} className="w-full max-w-xl">
+          <div className="w-full max-w-xl">
             <h2 className="text-3xl font-bold tracking-tight text-navy-900">Sign in</h2>
-            <p className="mt-1 text-navy-500">Choose your role to see the platform from that point of view.</p>
+            <p className="mt-1 text-navy-500">Pick a role to see the platform from that point of view. No password needed in the demo.</p>
 
-            {/* Step 1: role */}
-            <fieldset className="mt-8">
-              <legend className="text-sm font-semibold text-navy-800">1. Sign in as</legend>
-              <div role="radiogroup" aria-label="Role" className="mt-3 grid gap-2.5 sm:grid-cols-2">
-                {roles.map((r) => {
-                  const { icon: Icon, blurb } = ROLE_INFO[r]
-                  const active = r === role
-                  return (
-                    <button
-                      key={r}
-                      type="button"
-                      role="radio"
-                      aria-checked={active}
-                      onClick={() => pickRole(r)}
-                      className={clsx(
-                        'group relative flex items-start gap-3 rounded-xl border bg-white p-3.5 text-left transition',
-                        'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-500',
-                        active ? 'border-teal-500 ring-2 ring-teal-500/20' : 'border-navy-100 hover:border-navy-300',
-                        r === 'admin' && roles.length % 2 === 1 && 'sm:col-span-2',
-                      )}
-                    >
-                      <span className={clsx('flex size-10 shrink-0 items-center justify-center rounded-lg', active ? 'bg-teal-600 text-white' : 'bg-navy-50 text-navy-600 group-hover:bg-navy-100')}>
+            <ul className="mt-8 space-y-3">
+              {roles.map((r) => {
+                const { icon: Icon, blurb } = ROLE_INFO[r]
+                const roleUsers = users.filter((u) => u.role === r)
+                return (
+                  <li key={r} className="rounded-2xl border border-navy-100 bg-white p-4 shadow-sm">
+                    <div className="flex items-start gap-3">
+                      <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-navy-900 text-teal-300">
                         <Icon className="size-5" aria-hidden />
                       </span>
-                      <span className="min-w-0">
-                        <span className="block font-semibold text-navy-900">{ROLE_LABELS[r]}</span>
-                        <span className="block text-sm text-navy-500">{blurb}</span>
-                      </span>
-                      {active && <Check className="absolute top-3 right-3 size-4 text-teal-600" aria-hidden />}
-                    </button>
-                  )
-                })}
-              </div>
-            </fieldset>
-
-            {/* Step 2: account for that role */}
-            <fieldset className="mt-7">
-              <legend className="text-sm font-semibold text-navy-800">2. Account</legend>
-              {roleUsers.length > 1 && (
-                <div role="radiogroup" aria-label="Account" className="mt-3 space-y-2">
-                  {roleUsers.map((u) => {
-                    const active = u.id === selected?.id
-                    return (
-                      <label
-                        key={u.id}
-                        className={clsx(
-                          'flex cursor-pointer items-center gap-3 rounded-xl border bg-white px-3.5 py-2.5 transition has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-teal-500',
-                          active ? 'border-teal-500 ring-2 ring-teal-500/20' : 'border-navy-100 hover:border-navy-300',
-                        )}
-                      >
-                        <input type="radio" name="account" value={u.id} checked={active} onChange={() => setUserId(u.id)} className="sr-only" />
-                        <UserAvatar user={u} size="sm" />
-                        <span className="min-w-0 flex-1">
-                          <span className="block font-medium text-navy-900">{u.name}</span>
-                          <span className="block truncate text-xs text-navy-500">
-                            {u.jobTitle} · {siteFilterLabel(u, 'ALL')}
-                          </span>
-                        </span>
-                        <span className={clsx('flex size-5 items-center justify-center rounded-full border', active ? 'border-teal-600 bg-teal-600 text-white' : 'border-navy-200')}>
-                          {active && <Check className="size-3" aria-hidden />}
-                        </span>
-                      </label>
-                    )
-                  })}
-                </div>
-              )}
-
-              {selected && (
-                <div className="mt-3 space-y-3">
-                  {roleUsers.length === 1 && (
-                    <div className="flex items-center gap-3 rounded-xl border border-navy-100 bg-white px-3.5 py-2.5">
-                      <UserAvatar user={selected} size="sm" />
-                      <span className="min-w-0">
-                        <span className="block font-medium text-navy-900">{selected.name}</span>
-                        <span className="block truncate text-xs text-navy-500">
-                          {selected.jobTitle} · {siteFilterLabel(selected, 'ALL')}
-                        </span>
-                      </span>
+                      <div className="min-w-0">
+                        <h3 className="font-semibold text-navy-900">{ROLE_LABELS[r]}</h3>
+                        <p className="text-sm text-navy-500">{blurb}</p>
+                      </div>
                     </div>
-                  )}
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <label className="relative block">
-                      <UserIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-navy-400" aria-hidden />
-                      <input readOnly value={username(selected.name)} aria-label="Username" className="block w-full rounded-lg border border-navy-200 bg-white py-2.5 pr-3 pl-9 text-navy-900" />
-                    </label>
-                    <label className="relative block">
-                      <Lock className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-navy-400" aria-hidden />
-                      <input
-                        readOnly
-                        type="password"
-                        value="demo-access"
-                        aria-label="Password (not needed in the demo)"
-                        className="block w-full rounded-lg border border-navy-200 bg-navy-50 py-2.5 pr-3 pl-9 text-navy-500"
-                      />
-                    </label>
-                  </div>
-                  <p className="flex items-center gap-1.5 text-xs text-navy-500">
-                    <KeyRound className="size-3.5" aria-hidden />
-                    Demo access: no password is checked · {selected.organisation}
-                  </p>
-                </div>
-              )}
-            </fieldset>
-
-            <button
-              type="submit"
-              disabled={!selected}
-              className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-navy-900 px-5 py-3.5 text-base font-semibold text-white shadow-sm transition hover:bg-navy-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-500 disabled:opacity-50"
-            >
-              Sign in{selected ? ` as ${selected.name.split(' ')[0]}` : ''}
-              <ArrowRight className="size-5" aria-hidden />
-            </button>
-          </form>
+                    <div className={roleUsers.length > 1 ? 'mt-3 grid gap-2 sm:grid-cols-2' : 'mt-3'}>
+                      {roleUsers.map((u) => (
+                        <button
+                          key={u.id}
+                          type="button"
+                          onClick={() => signIn(u.id)}
+                          aria-label={`Log in as ${u.name}, ${ROLE_LABELS[r]}`}
+                          className="group flex w-full items-center gap-3 rounded-xl border border-navy-100 bg-navy-50/50 px-3 py-2.5 text-left transition hover:border-teal-400 hover:bg-teal-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-500"
+                        >
+                          <UserAvatar user={u} size="sm" />
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-sm font-medium text-navy-900">{u.name}</span>
+                            <span className="block truncate text-xs text-navy-500">{siteFilterLabel(u, 'ALL')}</span>
+                          </span>
+                          <span className="inline-flex shrink-0 items-center gap-1 text-sm font-semibold text-teal-700">
+                            Log in
+                            <ArrowRight className="size-4 transition group-hover:translate-x-0.5" aria-hidden />
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
         </div>
 
         <p className="px-6 pb-6 text-center text-xs text-navy-400 sm:px-10">Kuroshio AI · www.kuroshioai.com · EnergyIQ demo</p>
