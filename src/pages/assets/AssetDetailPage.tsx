@@ -83,7 +83,7 @@ export default function AssetDetailPage() {
 
       <div className="mt-3 mb-6 flex flex-wrap items-start justify-between gap-4">
         <div className="flex items-start gap-4">
-          <span className="flex size-14 shrink-0 items-center justify-center rounded-xl bg-navy-800 text-white">
+          <span className="flex size-14 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-teal-600 ring-1 ring-teal-100">
             <Icon className="size-7" aria-hidden />
           </span>
           <div>

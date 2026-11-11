@@ -118,7 +118,7 @@
     border-color: var(--color-border);
   }
   html {
-    @apply bg-navy-50 text-navy-900 antialiased;
+    @apply bg-white text-navy-900 antialiased;
   }
   body {
     @apply min-h-screen;

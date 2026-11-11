@@ -18,7 +18,7 @@ export default function AccessRestrictedPage() {
       {user && (
         <Link
           to={ROLE_HOME[user.role]}
-          className="mt-6 inline-block rounded-lg bg-navy-800 px-4 py-2 font-medium text-white hover:bg-navy-700"
+          className="mt-6 inline-block rounded-lg bg-teal-600 px-4 py-2 font-medium text-white hover:bg-teal-700"
         >
           Go to my home page
         </Link>

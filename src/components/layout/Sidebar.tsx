@@ -48,25 +48,25 @@ export function Sidebar({ mobileOpen, onClose, collapsed, onToggleCollapsed }: P
   return (
     <>
       {/* Dark backdrop behind the drawer on phones/tablets */}
-      <div className={cn('fixed inset-0 z-30 bg-navy-950/50 lg:hidden', mobileOpen ? 'block' : 'hidden')} onClick={onClose} aria-hidden />
+      <div className={cn('fixed inset-0 z-30 bg-navy-950/40 lg:hidden', mobileOpen ? 'block' : 'hidden')} onClick={onClose} aria-hidden />
 
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-40 flex w-64 flex-col bg-navy-950 text-navy-100 transition-[width,transform] duration-200 print:hidden lg:static lg:translate-x-0',
+          'fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-navy-100 bg-white text-navy-700 transition-[width,transform] duration-200 print:hidden lg:static lg:translate-x-0',
           mobileOpen ? 'translate-x-0' : '-translate-x-full',
           mini && 'lg:w-[4.5rem]',
         )}
       >
         {/* Brand */}
-        <div className={cn('flex h-16 items-center gap-3 border-b border-white/10 px-4', mini && 'lg:justify-center lg:px-0')}>
-          <KuroshioLogo white className="h-8" />
+        <div className={cn('flex h-16 items-center gap-3 border-b border-navy-100 px-4', mini && 'lg:justify-center lg:px-0')}>
+          <KuroshioLogo className="h-8" />
           <div className={cn('min-w-0 flex-1', mini && 'lg:hidden')}>
-            <p className="truncate text-sm font-bold text-white">
-              EnergyIQ <span className="font-medium text-navy-300">by Kuroshio AI</span>
+            <p className="truncate text-sm font-bold text-navy-950">
+              EnergyIQ <span className="font-medium text-navy-400">by Kuroshio AI</span>
             </p>
-            <p className="truncate text-xs text-teal-300">Prepared for Imdaad</p>
+            <p className="truncate text-xs text-teal-600">Prepared for Imdaad</p>
           </div>
-          <button type="button" onClick={onClose} className="rounded-md p-1 text-navy-300 hover:bg-white/10 lg:hidden" aria-label="Close menu">
+          <button type="button" onClick={onClose} className="rounded-md p-1 text-navy-400 hover:bg-navy-50 lg:hidden" aria-label="Close menu">
             <X className="size-5" />
           </button>
         </div>
@@ -92,14 +92,14 @@ export function Sidebar({ mobileOpen, onClose, collapsed, onToggleCollapsed }: P
         </nav>
 
         {/* Footer: collapse toggle (desktop) */}
-        <div className={cn('flex items-center gap-2 border-t border-white/10 px-4 py-3', mini && 'lg:justify-center lg:px-0')}>
+        <div className={cn('flex items-center gap-2 border-t border-navy-100 px-4 py-3', mini && 'lg:justify-center lg:px-0')}>
           <p className={cn('min-w-0 flex-1 truncate text-xs text-navy-400', mini && 'lg:hidden')}>Selec meters + Kuroshio IoT</p>
           <Tooltip>
             <TooltipTrigger asChild>
               <button
                 type="button"
                 onClick={onToggleCollapsed}
-                className="hidden rounded-md p-1.5 text-navy-300 hover:bg-white/10 hover:text-white lg:inline-flex"
+                className="hidden rounded-md p-1.5 text-navy-400 hover:bg-navy-50 hover:text-navy-800 lg:inline-flex"
                 aria-label={collapsed ? 'Expand menu' : 'Collapse menu'}
               >
                 {collapsed ? <PanelLeftOpen className="size-5" /> : <PanelLeftClose className="size-5" />}
@@ -123,7 +123,7 @@ function NavItemLink({ item, count, mini, onNavigate }: { item: NavItem; count: 
       className={({ isActive }) =>
         cn(
           'group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-          isActive ? 'bg-white/10 text-white' : 'text-navy-200 hover:bg-white/5 hover:text-white',
+          isActive ? 'bg-teal-50 font-semibold text-teal-700' : 'text-navy-600 hover:bg-navy-50 hover:text-navy-900',
           mini && 'lg:justify-center lg:px-0',
         )
       }
@@ -131,14 +131,14 @@ function NavItemLink({ item, count, mini, onNavigate }: { item: NavItem; count: 
       {({ isActive }) => (
         <>
           {/* Teal marker on the active page */}
-          <span className={cn('absolute top-1.5 bottom-1.5 left-0 w-1 rounded-r-full bg-teal-400 transition-opacity', isActive ? 'opacity-100' : 'opacity-0')} aria-hidden />
-          <Icon className={cn('size-[18px] shrink-0', isActive ? 'text-teal-300' : 'text-navy-300 group-hover:text-white')} aria-hidden />
+          <span className={cn('absolute top-1.5 bottom-1.5 left-0 w-1 rounded-r-full bg-teal-600 transition-opacity', isActive ? 'opacity-100' : 'opacity-0')} aria-hidden />
+          <Icon className={cn('size-[18px] shrink-0', isActive ? 'text-teal-600' : 'text-navy-400 group-hover:text-navy-700')} aria-hidden />
           <span className={cn('min-w-0 flex-1 truncate', mini && 'lg:hidden')}>{item.label}</span>
           {count > 0 && (
             <span
               className={cn(
                 'rounded-full px-1.5 py-px text-[11px] font-semibold tabular-nums',
-                alertTone ? 'bg-red-500 text-white' : 'bg-amber-400 text-navy-950',
+                alertTone ? 'bg-red-500 text-white' : 'bg-amber-100 text-amber-800',
                 mini && 'lg:absolute lg:top-0.5 lg:right-1.5 lg:px-1',
               )}
             >

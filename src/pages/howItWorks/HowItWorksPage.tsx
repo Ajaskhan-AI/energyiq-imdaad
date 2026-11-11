@@ -103,7 +103,7 @@ export default function HowItWorksPage() {
               <Fragment key={step.title}>
                 <div className="flex-1 rounded-xl border border-navy-100 bg-navy-50/50 p-4">
                   <div className="flex items-center gap-3">
-                    <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-navy-800 text-teal-300">
+                    <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-teal-50 text-teal-600 ring-1 ring-teal-100">
                       <Icon className="size-6" aria-hidden />
                     </span>
                     <div>

@@ -8,7 +8,7 @@ export default function NotFoundPage() {
       <p className="mt-2 text-navy-500">This page does not exist in the demo.</p>
       <Link
         to="/"
-        className="mt-6 inline-block rounded-lg bg-navy-800 px-4 py-2 font-medium text-white hover:bg-navy-700"
+        className="mt-6 inline-block rounded-lg bg-teal-600 px-4 py-2 font-medium text-white hover:bg-teal-700"
       >
         Back to my home page
       </Link>
