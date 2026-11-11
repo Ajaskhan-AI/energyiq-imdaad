@@ -15,8 +15,10 @@ export const PERMISSIONS = [
   'smdb.createWorkOrder',
   'smdb.editThresholds',
   'smdb.simulateFault',
-  // Power quality
+  // Power quality, capacity & reliability
   'pq.view',
+  'capacity.view',
+  'reliability.view',
   // Asset health (predictive maintenance)
   'assets.view',
   'assets.act',
@@ -24,9 +26,11 @@ export const PERMISSIONS = [
   'energy.view',
   'energy.edit',
   'energy.export',
-  // Billing & sub-metering
+  // Billing & sub-metering, budget
   'billing.view',
   'billing.export',
+  'budget.view',
+  'budget.edit',
   // IoT device health
   'devices.view',
   'devices.manage',
@@ -49,7 +53,8 @@ const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
   fm_manager: [
     'overview.view',
     'smdb.view', 'smdb.createWorkOrder', 'smdb.editThresholds',
-    'pq.view',
+    'pq.view', 'capacity.view', 'reliability.view',
+    'budget.view', 'budget.edit',
     'assets.view',
     'energy.view', 'energy.export',
     'billing.view', 'billing.export',
@@ -61,7 +66,8 @@ const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
   energy_engineer: [
     'overview.view',
     'smdb.view', 'smdb.ackAlerts', 'smdb.createWorkOrder', 'smdb.editThresholds',
-    'pq.view',
+    'pq.view', 'capacity.view', 'reliability.view',
+    'budget.view', 'budget.edit',
     'assets.view', 'assets.act',
     'energy.view', 'energy.edit', 'energy.export',
     'billing.view', 'billing.export',
@@ -72,7 +78,7 @@ const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
   site_supervisor: [
     'overview.view',
     'smdb.view', 'smdb.ackAlerts', 'smdb.createWorkOrder',
-    'pq.view',
+    'pq.view', 'capacity.view', 'reliability.view',
     'assets.view', 'assets.act',
     'energy.view',
     'devices.view',
@@ -82,6 +88,7 @@ const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
   client_viewer: [
     'overview.view',
     'smdb.view',
+    'reliability.view', 'budget.view',
     'assets.view',
     'energy.view', 'energy.export',
     'billing.view', 'billing.export',
@@ -91,7 +98,8 @@ const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
   admin: [
     'overview.view',
     'smdb.view', 'smdb.ackAlerts', 'smdb.createWorkOrder', 'smdb.editThresholds', 'smdb.simulateFault',
-    'pq.view',
+    'pq.view', 'capacity.view', 'reliability.view',
+    'budget.view', 'budget.edit',
     'assets.view', 'assets.act',
     'energy.view', 'energy.edit', 'energy.export',
     'billing.view',
@@ -123,6 +131,9 @@ export const PAGE_ACCESS = {
   overview: ['overview.view'],
   smdb: ['smdb.view'],
   powerQuality: ['pq.view'],
+  capacity: ['capacity.view'],
+  reliability: ['reliability.view'],
+  budget: ['budget.view'],
   assets: ['assets.view'],
   energy: ['energy.view'],
   billing: ['billing.view'],

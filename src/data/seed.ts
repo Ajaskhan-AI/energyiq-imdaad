@@ -22,6 +22,7 @@ export function buildSeed(now: Date): AppData {
     thresholds: Object.fromEntries(SMDBS.map((s) => [s.id, { ...DEFAULT_THRESHOLDS }])),
     calendar: structuredClone(SEED_CALENDAR),
     predictiveResets: {},
+    budgets: {},
     reviewedWasteIds: [],
     counters: {
       workOrder: 1001 + workOrders.length,

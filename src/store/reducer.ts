@@ -164,6 +164,13 @@ export function appReducer(state: AppState, action: Action): AppState {
       }
     }
 
+    case 'SET_BUDGET': {
+      const budgets = { ...state.budgets }
+      if (action.aed === null) delete budgets[action.siteId]
+      else budgets[action.siteId] = action.aed
+      return { ...state, budgets }
+    }
+
     default: {
       // If a new action type is added but not handled, TypeScript errors here.
       const unhandled: never = action

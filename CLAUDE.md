@@ -40,7 +40,10 @@ Imdaad (FM provider) → **clients** → **sites** → **buildings** → **SMDBs
 7. **Work orders** — raised from alerts, asset health and waste patterns; Open → In progress → Closed with history; simulated Send to CAFM; PDF.
 8. **Device health** — IoT node status, signal, data completeness, last seen, firmware; admin can simulate comms loss / restart node.
 9. **Monthly client report** — per client or per site; PDF (energy, cost, waste, CO₂, power quality, alerts, assets, work orders).
-10. **How it works** — hardware chain, modules, add-ons, pilot outline, about Kuroshio.
+10. **Capacity & demand** — metered peak demand vs breaker rating per board, headroom, hours above the planning limit, load duration curve, "can this board take X kW?" checker (`src/lib/capacity.ts`).
+11. **Budget & forecast** — month-to-date cost per site vs an editable monthly budget, month-end forecast from the load model, likely cause linked to waste patterns (`src/lib/budget.ts`; budgets stored per site).
+12. **Supply reliability** — breaker trips and utility supply interruptions detected by the meters, availability per board and site, repeat-trip boards, event log; live demo trips appear too (`src/lib/reliability.ts`).
+13. **How it works** — hardware chain, modules, add-ons, pilot outline, about Kuroshio.
 
 ## Role-based access (RBAC)
 No real authentication: a **demo login screen** with one card per user, and a **Switch role** menu in the top bar. Current user is persisted in localStorage; "Reset demo data" logs out.

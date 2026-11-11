@@ -16,6 +16,8 @@ export interface AppData {
   calendar: CalendarPeriod[]
   /** Predictive maintenance: assets marked resolved (health resets from this moment). */
   predictiveResets: Record<string, ActionStamp>
+  /** Monthly electricity budget per site (AED), set by the user. Missing = default budget. */
+  budgets: Record<string, number>
   /** Energy waste flags marked "reviewed". */
   reviewedWasteIds: string[]
   /** Next number for new IDs (WO-xxxx, ALT-xxxx). */
@@ -31,8 +33,8 @@ export interface AppState extends AppData {
   site: SiteFilter
 }
 
-// v10: Imdaad EnergyIQ data model (sites instead of campuses). Older saved data is re-seeded.
-export const STATE_VERSION = 10
+// v11: added site budgets. Older saved data is re-seeded.
+export const STATE_VERSION = 11
 
 export function createInitialState(now: Date): AppState {
   return {

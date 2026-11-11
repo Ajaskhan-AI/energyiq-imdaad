@@ -30,6 +30,8 @@ export type Action =
   | { type: 'SAVE_PERIOD'; period: CalendarPeriod }
   | { type: 'DELETE_PERIOD'; periodId: string }
   | { type: 'SET_WASTE_REVIEWED'; flagId: string; reviewed: boolean }
+  // Budgets
+  | { type: 'SET_BUDGET'; siteId: string; aed: number | null }
 
 export interface NewWorkOrderInput {
   /** Number to use, e.g. `WO-${state.counters.workOrder}` (so the UI can show it straight away). */
@@ -136,6 +138,10 @@ export const actions = {
   },
   deletePeriod(periodId: string): Action {
     return { type: 'DELETE_PERIOD', periodId }
+  },
+  /** Set a site's monthly budget (AED); null goes back to the default budget. */
+  setBudget(siteId: string, aed: number | null): Action {
+    return { type: 'SET_BUDGET', siteId, aed }
   },
   setWasteReviewed(flagId: string, reviewed: boolean): Action {
     return { type: 'SET_WASTE_REVIEWED', flagId, reviewed }
