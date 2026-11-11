@@ -14,6 +14,7 @@
 */
 @theme {
   --font-sans: "Inter Variable", "Inter", "Segoe UI", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Source Serif 4 Variable", Georgia, "Times New Roman", serif;
 
   --color-navy-50: #f3f6fd;
   --color-navy-100: #e3eaf8;

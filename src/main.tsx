@@ -2,6 +2,8 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 // Inter (variable weight) is bundled with the app, so it also works offline in the meeting room.
 import '@fontsource-variable/inter'
+// Serif used only for formal documents (the monthly report).
+import '@fontsource-variable/source-serif-4'
 import './index.css'
 import App from './App.tsx'
 import { TooltipProvider } from './components/shadcn/tooltip.tsx'
